@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Šahovski Klub</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=EB+Garamond:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --drvo-tamno: #3d1f08; --drvo-srednje: #6b3a1f; --drvo-zlatno: #d4a017;
+    --polje-bijelo: #f0d9b5; --polje-crno: #b58863;
+    --text-zlatni: #e8c87a; --text-bijeli: #f5e6c8; --text-tamni: #1a0d00;
+    --akcija: #8b1a1a; --zelena: #2d5a27; --zelena-hover: #3a7033;
+    --shadow: 0 8px 32px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--drvo-tamno);
+    background-image: repeating-linear-gradient(90deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px),
+      repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(255,255,255,.02) 40px,rgba(255,255,255,.02) 41px);
+    font-family: 'EB Garamond', serif;
+    color: var(--text-bijeli);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .ekran { display: none; min-height: 100vh; }
+  .ekran.aktivan { display: flex; }
+
+  /* PRIJAVA */
+  #ekran-prijava { flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; }
+  .prijava-kutija {
+    background: linear-gradient(135deg,var(--drvo-srednje) 0%,#4a2510 100%);
+    border: 2px solid var(--drvo-zlatno); border-radius:4px;
+    padding: 48px 40px; width:100%; max-width:420px;
+    box-shadow: var(--shadow),inset 0 1px 0 rgba(212,160,23,.3); text-align:center;
+  }
+  .prijava-logo { font-size:4rem; margin-bottom:8px; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
+  .prijava-naslov { font-family:'Playfair Display',serif; font-size:2rem; color:var(--text-zlatni); margin-bottom:6px; letter-spacing:1px; }
+  .prijava-podnaslov { color:rgba(245,230,200,.6); font-style:italic; margin-bottom:36px; }
+  .forma-grupa { margin-bottom:20px; text-align:left; }
+  .forma-grupa label { display:block; color:var(--text-zlatni); margin-bottom:8px; font-size:.9rem; letter-spacing:1px; text-transform:uppercase; }
+  .forma-unos { width:100%; background:rgba(0,0,0,.4); border:1px solid rgba(212,160,23,.4); border-radius:3px; padding:12px 16px; color:var(--text-bijeli); font-family:'EB Garamond',serif; font-size:1.1rem; transition:border-color .2s,box-shadow .2s; }
+  .forma-unos:focus { outline:none; border-color:var(--drvo-zlatno); box-shadow:0 0 0 3px rgba(212,160,23,.15); }
+  .gumb { width:100%; padding:14px 24px; font-family:'Playfair Display',serif; font-size:1.1rem; letter-spacing:1px; border:none; border-radius:3px; cursor:pointer; transition:all .2s; margin-top:8px; }
+  .gumb-primarni { background:linear-gradient(180deg,var(--drvo-zlatno) 0%,#a87c0a 100%); color:var(--text-tamni); border:1px solid #8a6408; box-shadow:0 4px 12px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.2); }
+  .gumb-primarni:hover { background:linear-gradient(180deg,#e8c87a 0%,var(--drvo-zlatno) 100%); transform:translateY(-1px); }
+  .gumb-primarni:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+  .gumb-opasnost { background:linear-gradient(180deg,var(--akcija) 0%,#6b1212 100%); color:var(--text-bijeli); border:1px solid #5a0f0f; }
+  .gumb-opasnost:hover { filter:brightness(1.15); transform:translateY(-1px); }
+  .gumb-sekundarni { background:rgba(0,0,0,.3); color:var(--text-bijeli); border:1px solid rgba(245,230,200,.3); }
+  .gumb-sekundarni:hover { background:rgba(0,0,0,.5); }
+  .greska-poruka { color:#ff6b6b; font-size:.9rem; margin-top:8px; min-height:20px; }
+  .info-poruka { color:#81C784; font-size:.9rem; margin-top:8px; min-height:20px; }
+  .loader { display:inline-block; width:14px; height:14px; border:2px solid rgba(212,160,23,.3); border-top-color:var(--drvo-zlatno); border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-right:6px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* GLAVNI */
+  #ekran-glavni { flex-direction:column; min-height:100vh; }
+  header { background:linear-gradient(180deg,#1a0a00 0%,var(--drvo-srednje) 100%); border-bottom:3px solid var(--drvo-zlatno); padding:12px 24px; display:flex; align-items:center; gap:16px; box-shadow:0 4px 16px rgba(0,0,0,.5); }
+  header h1 { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--text-zlatni); letter-spacing:2px; }
+  .glavni-sadrzaj { display:grid; grid-template-columns:260px 1fr 280px; flex:1; max-height:calc(100vh - 60px); }
+
+  .panel-lijevi,.panel-desni { background:linear-gradient(180deg,#2a1205 0%,#1a0a00 100%); padding:20px 16px; display:flex; flex-direction:column; gap:16px; overflow-y:auto; }
+  .panel-lijevi { border-right:2px solid rgba(212,160,23,.3); }
+  .panel-desni { border-left:2px solid rgba(212,160,23,.3); }
+  .panel-naslov { font-family:'Playfair Display',serif; color:var(--text-zlatni); font-size:.85rem; letter-spacing:2px; text-transform:uppercase; border-bottom:1px solid rgba(212,160,23,.3); padding-bottom:8px; }
+  .igrac-kartica { background:rgba(0,0,0,.3); border:1px solid rgba(212,160,23,.2); border-radius:3px; padding:12px; }
+  .igrac-kartica.ceka { border-left:3px solid var(--drvo-zlatno); }
+  .igrac-kartica.igra { border-left:3px solid #4CAF50; }
+  .igrac-ime { font-family:'Playfair Display',serif; font-size:1rem; margin-bottom:4px; }
+  .igrac-status { font-size:.8rem; color:rgba(245,230,200,.5); font-style:italic; }
+  .igrac-status.igra { color:#81C784; }
+  .igrac-status.ceka { color:var(--text-zlatni); }
+  .nema-igraca { color:rgba(245,230,200,.3); font-style:italic; font-size:.9rem; text-align:center; padding:20px 0; }
+  .separator { border:none; border-top:1px solid rgba(212,160,23,.2); margin:4px 0; }
+
+  .panel-sredina { display:flex; flex-direction:column; align-items:center; padding:20px; overflow-y:auto; }
+  .dobrodosli-ekran { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:400px; text-align:center; padding:40px; width:100%; }
+  .dobrodosli-ikona { font-size:5rem; margin-bottom:20px; opacity:.6; }
+  .dobrodosli-tekst { font-family:'Playfair Display',serif; font-size:1.5rem; color:var(--text-zlatni); margin-bottom:8px; }
+  .dobrodosli-podtekst { color:rgba(245,230,200,.4); font-style:italic; margin-bottom:24px; }
+  .izazov-kartica { background:rgba(212,160,23,.1); border:1px solid var(--drvo-zlatno); border-radius:4px; padding:20px; text-align:center; max-width:360px; width:100%; margin-top:16px; }
+  .izazov-naslov { font-family:'Playfair Display',serif; color:var(--text-zlatni); font-size:1.2rem; margin-bottom:12px; }
+  .izazov-gumbi { display:flex; gap:10px; justify-content:center; margin-top:14px; }
+  .izazov-gumbi .gumb { width:auto; padding:10px 24px; margin:0; }
+
+  .info-igre { display:flex; justify-content:space-between; align-items:center; width:100%; max-width:520px; margin-bottom:12px; }
+  .igrac-info-prikaz { display:flex; align-items:center; gap:10px; background:rgba(0,0,0,.3); border:1px solid rgba(212,160,23,.25); border-radius:3px; padding:8px 14px; }
+  .igrac-figura { font-size:1.5rem; }
+  .igrac-info-ime { font-family:'Playfair Display',serif; font-size:1rem; }
+  .igrac-info-boja { font-size:.75rem; color:rgba(245,230,200,.5); }
+  .potez-indikator { background:linear-gradient(135deg,rgba(212,160,23,.2),rgba(212,160,23,.05)); border:1px solid var(--drvo-zlatno); border-radius:3px; padding:8px 16px; text-align:center; font-family:'Playfair Display',serif; font-size:.85rem; color:var(--text-zlatni); }
+  .ploca-okvir { background:var(--drvo-srednje); border:8px solid var(--drvo-srednje); border-radius:4px; box-shadow:var(--shadow),inset 0 0 20px rgba(0,0,0,.3); position:relative; }
+  .ploca-okvir::before { content:''; position:absolute; inset:-8px; border:2px solid rgba(212,160,23,.4); border-radius:4px; pointer-events:none; }
+  .ploca { display:grid; grid-template-columns:repeat(8,60px); grid-template-rows:repeat(8,60px); }
+  .polje { width:60px; height:60px; display:flex; align-items:center; justify-content:center; font-size:2.2rem; cursor:pointer; position:relative; transition:filter .15s; user-select:none; }
+  .polje.bijelo { background:var(--polje-bijelo); }
+  .polje.crno { background:var(--polje-crno); }
+  .polje.odabrano { outline:4px solid rgba(255,210,0,.8); outline-offset:-4px; z-index:1; }
+  .polje.moguc-potez::after { content:''; position:absolute; width:20px; height:20px; background:rgba(0,0,0,.25); border-radius:50%; pointer-events:none; }
+  .polje.moguc-hvatanje { outline:4px solid rgba(220,50,50,.6); outline-offset:-4px; }
+  .polje.zadnji-potez { background:rgba(155,199,0,.4) !important; }
+  .polje.sah { background:rgba(220,50,50,.5) !important; }
+  .polje:hover:not(.odabrano) { filter:brightness(1.1); }
+  .figura-anim { display:inline-block; }
+  .status-traka { width:100%; max-width:520px; margin-top:12px; display:flex; gap:8px; }
+  .status-poruka { flex:1; background:rgba(0,0,0,.4); border:1px solid rgba(212,160,23,.2); border-radius:3px; padding:8px 14px; font-size:.9rem; font-style:italic; color:rgba(245,230,200,.7); min-height:36px; }
+  .gumb-malen { padding:8px 14px; font-family:'Playfair Display',serif; font-size:.85rem; border:1px solid rgba(212,160,23,.4); border-radius:3px; background:rgba(0,0,0,.3); color:var(--text-bijeli); cursor:pointer; transition:all .2s; white-space:nowrap; }
+  .gumb-malen:hover { background:rgba(212,160,23,.15); border-color:var(--drvo-zlatno); }
+  .gumb-malen.opasnost { border-color:rgba(139,26,26,.5); }
+  .gumb-malen.opasnost:hover { background:rgba(139,26,26,.2); border-color:var(--akcija); }
+  .notacija-lista { max-height:100px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:4px; padding:4px; background:rgba(0,0,0,.2); border-radius:3px; }
+  .notacija-potez { font-size:.75rem; padding:2px 6px; background:rgba(0,0,0,.3); border-radius:2px; color:rgba(245,230,200,.6); }
+
+  .stat-tablica { width:100%; border-collapse:collapse; font-size:.85rem; }
+  .stat-tablica th { color:var(--text-zlatni); text-align:left; padding:4px 6px; border-bottom:1px solid rgba(212,160,23,.3); font-weight:normal; font-size:.75rem; }
+  .stat-tablica td { padding:6px 6px; border-bottom:1px solid rgba(255,255,255,.05); }
+  .stat-tablica tr:hover td { background:rgba(255,255,255,.03); }
+  .stat-ime { font-family:'Playfair Display',serif; font-size:.9rem; }
+  .meč-kartica { background:rgba(0,0,0,.25); border:1px solid rgba(212,160,23,.15); border-radius:3px; padding:12px; margin-bottom:6px; }
+  .meč-igraci { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .meč-igrac { font-family:'Playfair Display',serif; font-size:.95rem; }
+  .meč-vs { color:rgba(245,230,200,.3); font-size:.8rem; }
+  .meč-rezultat { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .rezultat-bedž { padding:2px 8px; border-radius:2px; font-size:.8rem; font-weight:bold; }
+  .pobjeda { background:rgba(45,90,39,.6); color:#81C784; border:1px solid rgba(45,90,39,.8); }
+  .poraz { background:rgba(139,26,26,.5); color:#EF9A9A; border:1px solid rgba(139,26,26,.7); }
+  .remi-bedž { background:rgba(120,100,40,.5); color:var(--text-zlatni); border:1px solid rgba(120,100,40,.7); }
+  .meč-datum { font-size:.75rem; color:rgba(245,230,200,.3); font-style:italic; }
+  .nema-rezultata { color:rgba(245,230,200,.3); font-style:italic; font-size:.9rem; text-align:center; padding:20px 0; }
+  .filteri { display:flex; gap:6px; flex-wrap:wrap; }
+  .filter-gumb { padding:4px 10px; font-size:.75rem; border:1px solid rgba(212,160,23,.3); border-radius:2px; background:rgba(0,0,0,.3); color:rgba(245,230,200,.6); cursor:pointer; transition:all .2s; }
+  .filter-gumb.aktivan,.filter-gumb:hover { background:rgba(212,160,23,.15); border-color:var(--drvo-zlatno); color:var(--text-zlatni); }
+
+  #ekran-admin { flex-direction:column; align-items:center; padding:40px 20px; overflow-y:auto; }
+  .admin-kutija { background:linear-gradient(135deg,var(--drvo-srednje),#2a1205); border:2px solid var(--drvo-zlatno); border-radius:4px; padding:36px; width:100%; max-width:600px; box-shadow:var(--shadow); }
+  .admin-naslov { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--text-zlatni); margin-bottom:24px; text-align:center; border-bottom:1px solid rgba(212,160,23,.3); padding-bottom:16px; }
+  .igrac-red-admin { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:rgba(0,0,0,.3); border:1px solid rgba(212,160,23,.2); border-radius:3px; margin-bottom:6px; }
+  .ukloni-gumb { background:none; border:1px solid rgba(139,26,26,.5); color:#EF9A9A; padding:4px 10px; border-radius:2px; cursor:pointer; font-size:.8rem; transition:all .2s; }
+  .ukloni-gumb:hover { background:rgba(139,26,26,.3); }
+  .dodaj-forma { display:flex; gap:8px; margin-bottom:20px; }
+  .dodaj-forma input { flex:1; background:rgba(0,0,0,.4); border:1px solid rgba(212,160,23,.4); border-radius:3px; padding:10px 14px; color:var(--text-bijeli); font-family:'EB Garamond',serif; font-size:1rem; }
+  .dodaj-forma input:focus { outline:none; border-color:var(--drvo-zlatno); }
+  .dodaj-gumb { background:linear-gradient(180deg,var(--zelena) 0%,#1e3d1a 100%); color:var(--text-bijeli); border:1px solid #1e3d1a; padding:10px 18px; border-radius:3px; cursor:pointer; font-family:'Playfair Display',serif; transition:all .2s; white-space:nowrap; }
+  .dodaj-gumb:hover { filter:brightness(1.15); }
+
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:100; align-items:center; justify-content:center; }
+  .modal-overlay.aktivan { display:flex; }
+  .modal-kutija { background:linear-gradient(135deg,var(--drvo-srednje),#2a1205); border:2px solid var(--drvo-zlatno); border-radius:4px; padding:32px; text-align:center; box-shadow:var(--shadow); min-width:300px; max-width:400px; }
+  .modal-naslov { font-family:'Playfair Display',serif; font-size:1.5rem; color:var(--text-zlatni); margin-bottom:16px; }
+  .promocija-figure { display:flex; justify-content:center; gap:16px; margin-bottom:8px; }
+  .promo-figura { font-size:2.5rem; cursor:pointer; padding:8px; border:1px solid rgba(212,160,23,.3); border-radius:4px; background:rgba(0,0,0,.3); transition:all .2s; }
+  .promo-figura:hover { background:rgba(212,160,23,.2); border-color:var(--drvo-zlatno); transform:scale(1.1); }
+  .modal-gumbi { display:flex; gap:12px; justify-content:center; margin-top:20px; }
+  .modal-gumbi .gumb { width:auto; padding:10px 24px; margin:0; }
+
+  .admin-link { position:fixed; bottom:12px; right:12px; background:rgba(0,0,0,.5); border:1px solid rgba(212,160,23,.2); color:rgba(245,230,200,.2); padding:6px 10px; border-radius:3px; font-size:.7rem; cursor:pointer; transition:all .3s; }
+  .admin-link:hover { color:var(--text-zlatni); border-color:rgba(212,160,23,.5); }
+  .na-potezu { color:#81C784; font-weight:bold; }
+  .ceka-potez { color:rgba(245,230,200,.4); }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation:fadeIn .3s ease; }
+  @keyframes puls { 0%,100%{opacity:1}50%{opacity:.6} }
+  .puls { animation:puls 1.5s infinite; }
+
+  /* ── MOBILNA NAVIGACIJA (tab traka) ── */
+  .mob-nav {
+    display:none;
+    position:fixed; bottom:0; left:0; right:0;
+    background:linear-gradient(180deg,#1a0a00,#0d0500);
+    border-top:2px solid var(--drvo-zlatno);
+    z-index:50;
+    box-shadow:0 -4px 20px rgba(0,0,0,.6);
+  }
+  .mob-nav-inner { display:flex; }
+  .mob-tab {
+    flex:1; padding:10px 4px 8px;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; color:rgba(245,230,200,.4);
+    font-family:'EB Garamond',serif; font-size:.65rem; letter-spacing:.5px;
+    text-transform:uppercase; cursor:pointer; transition:all .2s;
+    border-top:2px solid transparent; margin-top:-2px;
+  }
+  .mob-tab .tab-ikona { font-size:1.3rem; line-height:1; }
+  .mob-tab.aktivan { color:var(--text-zlatni); border-top-color:var(--drvo-zlatno); }
+  .mob-tab:active { background:rgba(212,160,23,.1); }
+
+  /* ── MOBILNI PANELI ── */
+  .mob-panel {
+    display:none;
+    flex-direction:column;
+    flex:1;
+    overflow-y:auto;
+    padding:16px;
+    gap:14px;
+  }
+  .mob-panel.aktivan { display:flex; }
+
+  /* ── RESPONSIVNOST ── */
+  @media(max-width:900px) {
+    /* Layout */
+    .glavni-sadrzaj { grid-template-columns:1fr; max-height:none; }
+    .panel-lijevi,.panel-desni { display:none; }
+    .mob-nav { display:block; }
+
+    /* Header kompaktniji */
+    header { padding:10px 14px; }
+    header h1 { font-size:1.2rem; letter-spacing:1px; }
+    header .kralj-ikona { font-size:1.4rem; }
+
+    /* Ekran glavni — prostor za tab traku */
+    #ekran-glavni { padding-bottom:56px; }
+
+    /* Panel sredina puni ekran */
+    .panel-sredina { padding:12px 8px; }
+
+    /* Ploča — dinamička veličina */
+    .ploca-okvir { border-width:5px; }
+    .ploca { grid-template-columns:repeat(8,var(--vel,42px)); grid-template-rows:repeat(8,var(--vel,42px)); }
+    .polje { width:var(--vel,42px); height:var(--vel,42px); font-size:calc(var(--vel,42px) * 0.6); }
+    .polje.moguc-potez::after { width:14px; height:14px; }
+
+    /* Info igre */
+    .info-igre { flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+    .igrac-info-prikaz { padding:6px 10px; flex:1; min-width:130px; }
+    .igrac-info-ime { font-size:.9rem; }
+    .igrac-info-boja { font-size:.7rem; }
+    .potez-indikator { width:100%; text-align:center; padding:6px 10px; font-size:.8rem; order:3; }
+
+    /* Status traka */
+    .status-traka { flex-wrap:wrap; }
+    .status-poruka { min-width:100%; order:1; font-size:.85rem; padding:6px 10px; }
+    .gumb-malen { flex:1; text-align:center; padding:10px 8px; font-size:.85rem; min-height:40px; }
+
+    /* Notacija */
+    .notacija-lista { max-height:72px; }
+
+    /* Dobrodošli ekran */
+    .dobrodosli-ekran { padding:20px 12px; min-height:300px; }
+    .dobrodosli-ikona { font-size:3rem; margin-bottom:12px; }
+    .dobrodosli-tekst { font-size:1.2rem; }
+
+    /* Modal */
+    .modal-kutija { min-width:280px; max-width:92vw; padding:24px 18px; margin:0 12px; }
+    .modal-naslov { font-size:1.2rem; }
+    .promo-figura { font-size:2rem; padding:10px; }
+
+    /* Prijava */
+    .prijava-kutija { padding:32px 24px; }
+    .prijava-naslov { font-size:1.6rem; }
+
+    /* Admin */
+    .admin-kutija { padding:24px 18px; }
+    .admin-naslov { font-size:1.4rem; }
+    .dodaj-forma { flex-direction:column; }
+    .dodaj-forma input,.dodaj-gumb { width:100%; }
+  }
+
+  @media(max-width:400px) {
+    :root { --vel:38px; }
+  }
+  @media(min-width:401px) and (max-width:520px) {
+    :root { --vel:42px; }
+  }
+  @media(min-width:521px) and (max-width:700px) {
+    :root { --vel:50px; }
+  }
+  @media(min-width:701px) and (max-width:900px) {
+    :root { --vel:56px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PRIJAVA -->
+<div id="ekran-prijava" class="ekran aktivan">
+  <div class="prijava-kutija fade-in">
+    <div class="prijava-logo">♛</div>
+    <h1 class="prijava-naslov">Šahovski Klub</h1>
+    <p class="prijava-podnaslov">Unesite svoje kodno ime za ulaz</p>
+    <div class="forma-grupa">
+      <label>Kodno ime</label>
+      <input type="text" id="unos-ime" class="forma-unos" placeholder="npr. Francesco" autocomplete="off" maxlength="30">
+      <div class="greska-poruka" id="greska-prijave"></div>
+      <div class="info-poruka" id="info-prijave"></div>
+    </div>
+    <button class="gumb gumb-primarni" id="gumb-prijava" onclick="prijava()">Ulaz u klub ♟</button>
+  </div>
+  <div class="admin-link" onclick="otvoriAdmin()">⚙ Admin</div>
+</div>
+
+<!-- ADMIN -->
+<div id="ekran-admin" class="ekran">
+  <div class="admin-kutija fade-in">
+    <h2 class="admin-naslov">⚙ Upravljanje Igračima</h2>
+    <div id="admin-loz-forma">
+      <p style="color:rgba(245,230,200,.5);font-style:italic;text-align:center;margin-bottom:16px;font-size:.9rem">Admin lozinka</p>
+      <div class="dodaj-forma">
+        <input type="password" id="unos-lozinke" placeholder="Lozinka" onkeydown="if(event.key==='Enter')provjeriLozinku()">
+        <button class="dodaj-gumb" onclick="provjeriLozinku()">Ulaz</button>
+      </div>
+      <div class="greska-poruka" id="greska-loz"></div>
+    </div>
+    <div id="admin-sadrzaj" style="display:none">
+      <h3 style="color:var(--text-zlatni);font-family:'Playfair Display',serif;margin-bottom:12px">Registrirani igrači</h3>
+      <div id="admin-lista"></div>
+      <hr class="separator" style="margin:16px 0">
+      <h3 style="color:var(--text-zlatni);font-family:'Playfair Display',serif;margin-bottom:12px">Dodaj igrača</h3>
+      <div class="dodaj-forma">
+        <input type="text" id="novi-igrac" placeholder="Kodno ime" maxlength="30" onkeydown="if(event.key==='Enter')dodajIgraca()">
+        <button class="dodaj-gumb" onclick="dodajIgraca()">+ Dodaj</button>
+      </div>
+      <div class="greska-poruka" id="greska-dodaj"></div>
+      <hr class="separator" style="margin:16px 0">
+      <h3 style="color:var(--text-zlatni);font-family:'Playfair Display',serif;margin-bottom:12px">Promjena lozinke</h3>
+      <div class="dodaj-forma">
+        <input type="password" id="nova-loz" placeholder="Nova lozinka">
+        <button class="dodaj-gumb" onclick="promijeniLozinku()">Spremi</button>
+      </div>
+      <hr class="separator" style="margin:16px 0">
+      <button class="gumb gumb-opasnost" style="font-size:.9rem;padding:10px" onclick="resetirajRezultate()">🗑 Obriši sve rezultate</button>
+    </div>
+    <div style="margin-top:24px;display:flex;gap:8px;justify-content:center">
+      <button class="gumb gumb-sekundarni" style="width:auto;padding:10px 24px" onclick="zatvoriAdmin()">← Povratak</button>
+    </div>
+  </div>
+</div>
+
+<!-- GLAVNI -->
+<div id="ekran-glavni" class="ekran">
+  <header>
+    <span style="font-size:1.8rem">♚</span>
+    <h1>Šahovski Klub</h1>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span id="header-ime" style="color:var(--text-zlatni);font-family:'Playfair Display',serif;font-size:.95rem"></span>
+      <button class="gumb-malen" onclick="odjava()">Odjava</button>
+    </div>
+  </header>
+
+  <!-- DESKTOP LAYOUT -->
+  <div class="glavni-sadrzaj">
+    <div class="panel-lijevi">
+      <div class="panel-naslov">♟ Online igrači</div>
+      <div id="lista-online"></div>
+      <hr class="separator">
+      <div class="panel-naslov">📋 Čekaonica</div>
+      <div id="lista-cekaonica"></div>
+    </div>
+    <div class="panel-sredina">
+      <div id="prikaz-cekanja" class="dobrodosli-ekran">
+        <div class="dobrodosli-ikona">♟</div>
+        <div class="dobrodosli-tekst" id="tekst-dobrodosli">Dobrodošli!</div>
+        <div class="dobrodosli-podtekst" id="podtekst-dobrodosli">Čekanje na protivnika...</div>
+        <div id="izazov-prikaz"></div>
+      </div>
+      <div id="prikaz-igre" style="display:none;flex-direction:column;align-items:center;width:100%">
+        <div class="info-igre">
+          <div class="igrac-info-prikaz">
+            <span class="igrac-figura" id="gornji-figura">♚</span>
+            <div><div class="igrac-info-ime" id="gornji-ime"></div><div class="igrac-info-boja" id="gornji-boja"></div></div>
+          </div>
+          <div class="potez-indikator" id="potez-ind"></div>
+        </div>
+        <div style="display:flex;align-items:center">
+          <div style="display:flex;flex-direction:column;margin-right:4px" id="kord-lijevo"></div>
+          <div class="ploca-okvir"><div class="ploca" id="ploca"></div></div>
+        </div>
+        <div style="display:flex;margin-left:24px;margin-top:4px" id="kord-dolje"></div>
+        <div class="info-igre" style="margin-top:12px;margin-bottom:0">
+          <div class="igrac-info-prikaz">
+            <span class="igrac-figura" id="donji-figura">♔</span>
+            <div><div class="igrac-info-ime" id="donji-ime"></div><div class="igrac-info-boja" id="donji-boja"></div></div>
+          </div>
+        </div>
+        <div class="status-traka">
+          <div class="status-poruka" id="status-msg">Igra u tijeku...</div>
+          <button class="gumb-malen" onclick="ponudiRemi()">½ Remi</button>
+          <button class="gumb-malen opasnost" onclick="predaj()">⚑ Predaj</button>
+        </div>
+        <div style="width:100%;max-width:520px;margin-top:10px">
+          <div style="font-size:.75rem;color:rgba(245,230,200,.4);margin-bottom:4px;letter-spacing:1px">POTEZI</div>
+          <div class="notacija-lista" id="notacija"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-desni">
+      <div class="panel-naslov">🏆 Statistike</div>
+      <table class="stat-tablica"><thead><tr><th>Igrač</th><th>P</th><th>I</th><th>R</th></tr></thead><tbody id="stat-tijelo"></tbody></table>
+      <hr class="separator">
+      <div class="panel-naslov">📜 Povijest</div>
+      <div class="filteri" id="filteri"></div>
+      <div id="povijest-lista" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- MOBILNI PANELI -->
+  <div id="mob-ploca" class="mob-panel aktivan">
+    <div id="mob-prikaz-cekanja" class="dobrodosli-ekran" style="padding:16px 8px;min-height:260px">
+      <div style="font-size:3rem;margin-bottom:12px;opacity:.6">♟</div>
+      <div class="dobrodosli-tekst" id="mob-tekst-dobrodosli" style="font-size:1.2rem">Dobrodošli!</div>
+      <div class="dobrodosli-podtekst" id="mob-podtekst-dobrodosli">Čekanje na protivnika...</div>
+      <div id="mob-izazov-prikaz" style="width:100%;max-width:340px;margin-top:12px"></div>
+    </div>
+    <div id="mob-prikaz-igre" style="display:none;flex-direction:column;align-items:center;width:100%">
+      <div class="info-igre">
+        <div class="igrac-info-prikaz">
+          <span class="igrac-figura" id="mob-gornji-figura">♚</span>
+          <div><div class="igrac-info-ime" id="mob-gornji-ime"></div><div class="igrac-info-boja" id="mob-gornji-boja"></div></div>
+        </div>
+        <div class="potez-indikator" id="mob-potez-ind"></div>
+      </div>
+      <div style="display:flex;align-items:center">
+        <div style="display:flex;flex-direction:column;margin-right:3px" id="mob-kord-lijevo"></div>
+        <div class="ploca-okvir"><div class="ploca" id="mob-ploca-el"></div></div>
+      </div>
+      <div style="display:flex;margin-left:20px;margin-top:3px" id="mob-kord-dolje"></div>
+      <div class="info-igre" style="margin-top:10px;margin-bottom:0">
+        <div class="igrac-info-prikaz">
+          <span class="igrac-figura" id="mob-donji-figura">♔</span>
+          <div><div class="igrac-info-ime" id="mob-donji-ime"></div><div class="igrac-info-boja" id="mob-donji-boja"></div></div>
+        </div>
+      </div>
+      <div class="status-traka">
+        <div class="status-poruka" id="mob-status-msg">Igra u tijeku...</div>
+        <button class="gumb-malen" onclick="ponudiRemi()">½ Remi</button>
+        <button class="gumb-malen opasnost" onclick="predaj()">⚑ Predaj</button>
+      </div>
+      <div style="width:100%;margin-top:8px">
+        <div style="font-size:.7rem;color:rgba(245,230,200,.4);margin-bottom:3px;letter-spacing:1px">POTEZI</div>
+        <div class="notacija-lista" id="mob-notacija"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mob-igraci" class="mob-panel">
+    <div class="panel-naslov">♟ Online igrači</div>
+    <div id="mob-lista-online"></div>
+    <hr class="separator">
+    <div class="panel-naslov">📋 Čekaonica</div>
+    <div id="mob-lista-cekaonica"></div>
+  </div>
+
+  <div id="mob-rezultati" class="mob-panel">
+    <div class="panel-naslov">🏆 Statistike</div>
+    <table class="stat-tablica"><thead><tr><th>Igrač</th><th>P</th><th>I</th><th>R</th></tr></thead><tbody id="mob-stat-tijelo"></tbody></table>
+    <hr class="separator">
+    <div class="panel-naslov">📜 Povijest</div>
+    <div class="filteri" id="mob-filteri"></div>
+    <div id="mob-povijest-lista" style="margin-top:8px"></div>
+  </div>
+
+  <!-- TAB NAVIGACIJA -->
+  <nav class="mob-nav">
+    <div class="mob-nav-inner">
+      <button class="mob-tab aktivan" id="tab-ploca" onclick="mobTab('ploca',this)">
+        <span class="tab-ikona">♟</span><span>Ploča</span>
+      </button>
+      <button class="mob-tab" id="tab-igraci" onclick="mobTab('igraci',this)">
+        <span class="tab-ikona">👥</span><span>Igrači</span>
+      </button>
+      <button class="mob-tab" id="tab-rezultati" onclick="mobTab('rezultati',this)">
+        <span class="tab-ikona">🏆</span><span>Rezultati</span>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- MODALI -->
+<div class="modal-overlay" id="modal-promocija">
+  <div class="modal-kutija">
+    <div class="modal-naslov">Promocija pješaka</div>
+    <p style="color:rgba(245,230,200,.6);margin-bottom:16px;font-style:italic">Odaberite figuru</p>
+    <div class="promocija-figure" id="promo-figure"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-remi">
+  <div class="modal-kutija">
+    <div class="modal-naslov">Ponuda remija</div>
+    <p style="color:rgba(245,230,200,.6);font-style:italic;margin-bottom:8px" id="remi-msg"></p>
+    <div class="modal-gumbi">
+      <button class="gumb gumb-primarni" onclick="prihvatiRemi()">Prihvati</button>
+      <button class="gumb gumb-opasnost" onclick="odbijRemi()">Odbij</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-kraj">
+  <div class="modal-kutija">
+    <div style="font-size:3rem;margin-bottom:12px" id="kraj-ikona">♛</div>
+    <div class="modal-naslov" id="kraj-naslov">Kraj igre</div>
+    <p style="color:rgba(245,230,200,.6);font-style:italic;margin-bottom:24px" id="kraj-msg"></p>
+    <button class="gumb gumb-primarni" onclick="zatvoriKraj()">Nova igra</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update, remove, push, onDisconnect }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyAgFjzedFqwTOSl1ehKMmrHk6VUWeR7KDk",
+  authDomain:"sahisti-af752.firebaseapp.com",
+  databaseURL:"https://sahisti-af752-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"sahisti-af752",
+  storageBucket:"sahisti-af752.firebasestorage.app",
+  messagingSenderId:"501400689974",
+  appId:"1:501400689974:web:aecc4b7cfe326c6f386797"
+});
+const db = getDatabase(app);
+
+// ── Šahovska logika ─────────────────────────────────────────
+const FIG={K:{b:'♔',c:'♚'},Q:{b:'♕',c:'♛'},R:{b:'♖',c:'♜'},B:{b:'♗',c:'♝'},N:{b:'♘',c:'♞'},P:{b:'♙',c:'♟'}};
+
+function novaPloca(){
+  const p=Array(8).fill(null).map(()=>Array(8).fill(null));
+  ['R','N','B','Q','K','B','N','R'].forEach((f,i)=>{p[0][i]={tip:f,boja:'c'};p[7][i]={tip:f,boja:'b'};});
+  for(let i=0;i<8;i++){p[1][i]={tip:'P',boja:'c'};p[6][i]={tip:'P',boja:'b'};}
+  return p;
+}
+const vP=(r,k)=>r>=0&&r<8&&k>=0&&k<8;
+
+function siroviPotezi(ploca,red,kol,igra){
+  const f=ploca[red][kol]; if(!f)return[];
+  const{tip,boja}=f,prot=boja==='b'?'c':'b',potezi=[];
+  const dodaj=(r,k)=>{if(vP(r,k)&&(!ploca[r][k]||ploca[r][k].boja!==boja))potezi.push([r,k]);};
+  const linija=(dr,dk)=>{let r=red+dr,k=kol+dk;while(vP(r,k)){if(ploca[r][k]){if(ploca[r][k].boja!==boja)potezi.push([r,k]);break;}potezi.push([r,k]);r+=dr;k+=dk;}};
+  if(tip==='P'){
+    const sm=boja==='b'?-1:1,poc=boja==='b'?6:1;
+    if(vP(red+sm,kol)&&!ploca[red+sm][kol]){potezi.push([red+sm,kol]);if(red===poc&&!ploca[red+2*sm][kol])potezi.push([red+2*sm,kol]);}
+    [-1,1].forEach(dk=>{if(vP(red+sm,kol+dk)){if(ploca[red+sm][kol+dk]?.boja===prot)potezi.push([red+sm,kol+dk]);if(igra?.enPassant&&igra.enPassant[0]===red+sm&&igra.enPassant[1]===kol+dk)potezi.push([red+sm,kol+dk]);}});
+  }else if(tip==='N'){[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dk])=>dodaj(red+dr,kol+dk));
+  }else if(tip==='B'){[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dk])=>linija(dr,dk));
+  }else if(tip==='R'){[[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dk])=>linija(dr,dk));
+  }else if(tip==='Q'){[[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dk])=>linija(dr,dk));
+  }else if(tip==='K'){
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dk])=>dodaj(red+dr,kol+dk));
+    if(igra){const rok=igra.rokada[boja],kr=boja==='b'?7:0;
+      if(rok?.kral&&red===kr&&kol===4){
+        if(rok.desni&&!ploca[kr][5]&&!ploca[kr][6])potezi.push([kr,6]);
+        if(rok.lijevi&&!ploca[kr][3]&&!ploca[kr][2]&&!ploca[kr][1])potezi.push([kr,2]);
+      }
+    }
+  }
+  return potezi;
+}
+
+function jeNapadnuto(ploca,red,kol,napadac){
+  for(let r=0;r<8;r++)for(let k=0;k<8;k++){
+    const f=ploca[r][k];if(!f||f.boja!==napadac)continue;
+    if(siroviPotezi(ploca,r,k,null).some(p=>p[0]===red&&p[1]===kol))return true;
+  }return false;
+}
+function nadjiKralja(ploca,boja){for(let r=0;r<8;r++)for(let k=0;k<8;k++)if(ploca[r][k]?.tip==='K'&&ploca[r][k].boja===boja)return[r,k];return null;}
+function jeUSahu(igra,boja){const[kr,kk]=nadjiKralja(igra.ploca,boja)||[];if(kr==null)return false;return jeNapadnuto(igra.ploca,kr,kk,boja==='b'?'c':'b');}
+function imaLegalnih(igra,boja){for(let r=0;r<8;r++)for(let k=0;k<8;k++)if(igra.ploca[r][k]?.boja===boja&&validniPotezi(igra,r,k).length>0)return true;return false;}
+
+function validniPotezi(igra,red,kol){
+  const figura=igra.ploca[red][kol];if(!figura)return[];
+  const boja=figura.boja,prot=boja==='b'?'c':'b';
+  return siroviPotezi(igra.ploca,red,kol,igra).filter(([tr,tk])=>{
+    if(figura.tip==='K'&&Math.abs(tk-kol)===2){
+      const p=tk===6?[5,6]:[3,2];
+      return !jeNapadnuto(igra.ploca,red,kol,prot)&&!jeNapadnuto(igra.ploca,red,p[0],prot)&&!jeNapadnuto(igra.ploca,red,p[1],prot);
+    }
+    const sim=igra.ploca.map(r=>[...r]);sim[tr][tk]=sim[red][kol];sim[red][kol]=null;
+    if(figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1])sim[tr+(boja==='b'?1:-1)][tk]=null;
+    const[kr,kk]=nadjiKralja(sim,boja)||[];return kr!=null&&!jeNapadnuto(sim,kr,kk,prot);
+  });
+}
+
+function sPloca(p){return p.map(r=>r.map(f=>f?`${f.tip}${f.boja}`:'0'));}
+function dPloca(d){return d.map(r=>r.map(p=>p==='0'?null:{tip:p[0],boja:p[1]}));}
+
+// ── Stanje ──────────────────────────────────────────────────
+let ja=null,igra=null,igra_id=null,odabrano=null,moguci=[];
+
+// ── DB helpers ───────────────────────────────────────────────
+const dbGet=async p=>{const s=await get(ref(db,p));return s.exists()?s.val():null;};
+const dbSet=(p,v)=>set(ref(db,p),v);
+const dbUpd=(p,v)=>update(ref(db,p),v);
+const dbDel=p=>remove(ref(db,p));
+const dbListen=(p,cb)=>onValue(ref(db,p),s=>cb(s.val()));
+
+// ── Init ─────────────────────────────────────────────────────
+async function init(){
+  if(!await dbGet('config'))await dbSet('config',{admin_loz:'admin123'});
+  if(!await dbGet('igraci'))await dbSet('igraci',{Francesco:true,Marta:true,Ivan:true,Ana:true,Luka:true});
+}
+init();
+
+// ── Prijava ──────────────────────────────────────────────────
+async function prijava(){
+  const ime=document.getElementById('unos-ime').value.trim();
+  const gr=document.getElementById('greska-prijave');
+  const gb=document.getElementById('gumb-prijava');
+  gr.textContent='';
+  if(!ime){gr.textContent='Unesite kodno ime.';return;}
+  gb.innerHTML='<span class="loader"></span>Provjera...';gb.disabled=true;
+  const igraci=await dbGet('igraci');
+  const kljuc=Object.keys(igraci||{}).find(k=>k.toLowerCase()===ime.toLowerCase());
+  if(!kljuc){gr.textContent='Kodno ime nije u bazi.';gb.innerHTML='Ulaz u klub ♟';gb.disabled=false;return;}
+  if(await dbGet(`online/${kljuc}`)){gr.textContent='Igrač je već prijavljen.';gb.innerHTML='Ulaz u klub ♟';gb.disabled=false;return;}
+  ja=kljuc;
+  const onRef=ref(db,`online/${ja}`);
+  await set(onRef,{ime:ja,ts:Date.now()});
+  onDisconnect(onRef).remove();
+  document.getElementById('header-ime').textContent=ja;
+  document.getElementById('ekran-prijava').classList.remove('aktivan');
+  document.getElementById('ekran-glavni').classList.add('aktivan');
+  gb.innerHTML='Ulaz u klub ♟';gb.disabled=false;
+  pokrenuiListenere();
+  azurirajStatistike();azurirajPovijest('sve');
+}
+window.prijava=prijava;
+
+async function odjava(){
+  if(igra_id){if(!confirm('Aktivna igra prekida se. Sigurno?'))return;await dbUpd(`igre/${igra_id}`,{status:'prekinuta',prekinuo:ja});await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});}
+  await dbDel(`online/${ja}`);await dbDel(`izazovi/${ja}`);
+  ja=null;igra=null;igra_id=null;odabrano=null;moguci=[];
+  document.getElementById('ekran-glavni').classList.remove('aktivan');
+  document.getElementById('ekran-prijava').classList.add('aktivan');
+  document.getElementById('unos-ime').value='';
+  document.getElementById('prikaz-igre').style.display='none';
+  document.getElementById('prikaz-cekanja').style.display='flex';
+}
+window.odjava=odjava;
+
+// ── Listeneri ────────────────────────────────────────────────
+function pokrenuiListenere(){
+  dbListen('online',data=>{renderOnline(data||{});});
+  dbListen(`izazovi/${ja}`,data=>{
+    if(data&&!igra_id)prikaziIzazov(data);
+    else if(!igra_id)document.getElementById('izazov-prikaz').innerHTML='';
+  });
+}
+
+function renderOnline(online){
+  const lista=document.getElementById('lista-online');
+  const cek=document.getElementById('lista-cekaonica');
+  const slobodni=[];
+  const igraci=Object.keys(online);
+  if(!igraci.length){
+    const prazan='<div class="nema-igraca">Nema online igrača</div>';
+    lista.innerHTML=prazan;
+    document.getElementById('mob-lista-online').innerHTML=prazan;
+    cek.innerHTML='';document.getElementById('mob-lista-cekaonica').innerHTML='';
+    if(!igra_id)renderGumbeCekanja([]);return;
+  }
+  const kartica=igraci.map(ime=>{
+    const uI=online[ime]?.igra_id;
+    if(!uI&&ime!==ja)slobodni.push(ime);
+    return`<div class="igrac-kartica ${uI?'igra':'ceka'}"><div class="igrac-ime">${ime}${ime===ja?' (ti)':''}</div><div class="igrac-status ${uI?'igra':'ceka'}">${uI?'⚔ U igri':'⏳ Čeka'}</div></div>`;
+  }).join('');
+  lista.innerHTML=kartica;
+  document.getElementById('mob-lista-online').innerHTML=kartica;
+  const cekHtml=slobodni.length?slobodni.map((n,i)=>`<div class="igrac-kartica ceka"><div class="igrac-ime">${n}</div><div class="igrac-status ceka">#${i+1} u redu</div></div>`).join(''):'<div class="nema-igraca" style="font-size:.8rem">Nema slobodnih</div>';
+  cek.innerHTML=cekHtml;
+  document.getElementById('mob-lista-cekaonica').innerHTML=cekHtml;
+  if(!igra_id)renderGumbeCekanja(slobodni);
+}
+
+function renderGumbeCekanja(slobodni){
+  const ip=document.getElementById('izazov-prikaz');
+  const mip=document.getElementById('mob-izazov-prikaz');
+  document.getElementById('tekst-dobrodosli').textContent=`Dobrodošli, ${ja}!`;
+  document.getElementById('mob-tekst-dobrodosli').textContent=`Dobrodošli, ${ja}!`;
+  if(document.querySelector('.izazov-kartica'))return;
+  if(slobodni.length){
+    document.getElementById('podtekst-dobrodosli').textContent='Izazovite igrača:';
+    document.getElementById('mob-podtekst-dobrodosli').textContent='Izazovite igrača:';
+    const gumbi=`<div style="display:flex;flex-wrap:wrap;justify-content:center">${slobodni.map(n=>`<button class="gumb gumb-primarni" style="width:auto;padding:12px 20px;margin:4px;font-size:1rem" onclick="posaljiIzazov('${n}')">⚔ Izazovi ${n}</button>`).join('')}</div>`;
+    ip.innerHTML=gumbi;mip.innerHTML=gumbi;
+  }else{
+    document.getElementById('podtekst-dobrodosli').textContent='Čekanje na protivnika...';
+    document.getElementById('mob-podtekst-dobrodosli').textContent='Čekanje na protivnika...';
+    ip.innerHTML='';mip.innerHTML='';
+  }
+}
+
+// ── Izazov ───────────────────────────────────────────────────
+async function posaljiIzazov(prot){
+  if(await dbGet(`izazovi/${prot}`)){alert(`${prot} već ima aktivan izazov.`);return;}
+  await dbSet(`izazovi/${prot}`,{od:ja,ts:Date.now()});
+  document.getElementById('podtekst-dobrodosli').textContent=`Izazov poslan ${prot}u...`;
+  document.getElementById('izazov-prikaz').innerHTML=`<p style="color:var(--text-zlatni);font-style:italic;margin-top:12px" class="puls">⏳ Čekanje na odgovor...</p>`;
+  dbListen(`izazovi_odg/${ja}`,async val=>{
+    if(!val)return;
+    if(val.prihvacen&&val.igra_id){await dbDel(`izazovi_odg/${ja}`);spojiBezIgru(val.igra_id);}
+    else if(val.prihvacen===false){await dbDel(`izazovi_odg/${ja}`);document.getElementById('podtekst-dobrodosli').textContent=`${prot} je odbio izazov.`;document.getElementById('izazov-prikaz').innerHTML='';}
+  });
+}
+window.posaljiIzazov=posaljiIzazov;
+
+function prikaziIzazov(data){
+  const html=`<div class="izazov-kartica">
+    <div class="izazov-naslov">⚔ Izazov od ${data.od}!</div>
+    <p style="color:rgba(245,230,200,.6);font-style:italic">${data.od} vas izaziva na partiju šaha</p>
+    <div class="izazov-gumbi">
+      <button class="gumb gumb-primarni" onclick="prihvatiIzazov('${data.od}')">Prihvati</button>
+      <button class="gumb gumb-opasnost" onclick="odbijIzazov('${data.od}')">Odbij</button>
+    </div>
+  </div>`;
+  document.getElementById('izazov-prikaz').innerHTML=html;
+  document.getElementById('mob-izazov-prikaz').innerHTML=html;
+  // Automatski skoči na ploču tab na mobitelu
+  const tab=document.getElementById('tab-ploca');
+  if(tab&&window.innerWidth<=900)mobTab('ploca',tab);
+}
+
+async function prihvatiIzazov(od){
+  const bijeli=Math.random()>.5?ja:od,crni=bijeli===ja?od:ja;
+  const noviRef=push(ref(db,'igre'));
+  const id=noviRef.key;
+  await set(noviRef,{bijeli,crni,ploca:sPloca(novaPloca()),naPotezu:'b',rokada:{b:{kral:true,lijevi:true,desni:true},c:{kral:true,lijevi:true,desni:true}},enPassant:null,zadnjiPotez:null,potezi:[],status:'aktivna',ts:Date.now()});
+  await dbSet(`izazovi_odg/${od}`,{prihvacen:true,igra_id:id});
+  await dbDel(`izazovi/${ja}`);
+  await dbUpd(`online/${ja}`,{igra_id:id});await dbUpd(`online/${od}`,{igra_id:id});
+  spojiBezIgru(id);
+}
+window.prihvatiIzazov=prihvatiIzazov;
+
+async function odbijIzazov(od){
+  await dbDel(`izazovi/${ja}`);
+  await dbSet(`izazovi_odg/${od}`,{prihvacen:false});
+  document.getElementById('izazov-prikaz').innerHTML='';
+}
+window.odbijIzazov=odbijIzazov;
+
+// ── Spoji na igru ─────────────────────────────────────────────
+function isMobile(){return window.innerWidth<=900;}
+
+function spojiBezIgru(id){
+  igra_id=id;
+  document.getElementById('prikaz-cekanja').style.display='none';
+  document.getElementById('prikaz-igre').style.display='flex';
+  document.getElementById('mob-prikaz-cekanja').style.display='none';
+  document.getElementById('mob-prikaz-igre').style.display='flex';
+  // Skoči na ploču tab
+  const tab=document.getElementById('tab-ploca');
+  if(tab)mobTab('ploca',tab);
+  dbListen(`igre/${id}`,data=>{
+    if(!data)return;
+    igra={ploca:dPloca(data.ploca),naPotezu:data.naPotezu,bijeliIme:data.bijeli,crniIme:data.crni,rokada:data.rokada||{b:{kral:true,lijevi:true,desni:true},c:{kral:true,lijevi:true,desni:true}},enPassant:data.enPassant||null,zadnjiPotez:data.zadnjiPotez||null,potezi:data.potezi||[]};
+    odabrano=null;moguci=[];
+    renderPloca();azurirajInfoIgre();azurirajNotaciju();
+    if(data.status==='zavrsen'){prikaziKrajModal(data.kraj_razlog,data.kraj_pobjednik,data.kraj_gubitnik);}
+    else if(data.status==='prekinuta'){document.getElementById('kraj-ikona').textContent='⚑';document.getElementById('kraj-naslov').textContent='Igra prekinuta';document.getElementById('kraj-msg').textContent=(data.prekinuo||'Protivnik')+' je napustio igru.';document.getElementById('modal-kraj').classList.add('aktivan');}
+    else if(data.status==='remi_ponuda'&&data.remi_ponudac!==ja){document.getElementById('remi-msg').textContent=`${data.remi_ponudac} nudi remi. Prihvaćate?`;document.getElementById('modal-remi').classList.add('aktivan');}
+    else if(data.status==='aktivna'){const np=data.naPotezu==='b'?data.bijeli:data.crni;setStatus(np===ja?'⟶ Vaš je potez!':np+' je na potezu');}
+  });
+}
+
+// ── Render ploče ─────────────────────────────────────────────
+function renderPlocaEl(ploEl,kdEl,klEl,velPx){
+  if(!igra)return;
+  ploEl.innerHTML='';
+  const ori=igra.bijeliIme===ja?'b':'c';
+  const redovi=ori==='b'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
+  const kolone=ori==='b'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
+  redovi.forEach(r=>kolone.forEach(k=>{
+    const div=document.createElement('div');
+    div.className='polje '+((r+k)%2===0?'bijelo':'crno');
+    if(velPx){div.style.width=velPx+'px';div.style.height=velPx+'px';div.style.fontSize=(velPx*0.62)+'px';}
+    if(igra.zadnjiPotez){const[or,ok,tr,tk]=igra.zadnjiPotez;if((r===or&&k===ok)||(r===tr&&k===tk))div.classList.add('zadnji-potez');}
+    if(odabrano&&odabrano[0]===r&&odabrano[1]===k)div.classList.add('odabrano');
+    if(moguci.some(p=>p[0]===r&&p[1]===k)){igra.ploca[r][k]?div.classList.add('moguc-hvatanje'):div.classList.add('moguc-potez');}
+    if(igra.ploca[r][k]?.tip==='K'&&jeUSahu(igra,igra.ploca[r][k].boja))div.classList.add('sah');
+    const fig=igra.ploca[r][k];
+    if(fig){const s=document.createElement('span');s.className='figura-anim';s.textContent=FIG[fig.tip][fig.boja];div.appendChild(s);}
+    div.addEventListener('click',()=>klikPolje(r,k));
+    ploEl.appendChild(div);
+  }));
+  const sl=ori==='b'?'abcdefgh':'hgfedcba';
+  const br=ori==='b'?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8];
+  const w=velPx||60;
+  if(kdEl)kdEl.innerHTML=sl.split('').map(s=>`<span style="width:${w}px;text-align:center;font-size:.7rem;color:rgba(245,230,200,.4)">${s}</span>`).join('');
+  if(klEl)klEl.innerHTML=br.map(n=>`<span style="height:${w}px;display:flex;align-items:center;font-size:.7rem;color:rgba(245,230,200,.4);width:16px;justify-content:flex-end;padding-right:4px">${n}</span>`).join('');
+}
+
+function getMobVel(){
+  const w=window.innerWidth;
+  // Ploča + koordinate + padding mora stati u širinu ekrana
+  // 8 polja + ~20px koordinate + ~16px padding sa strana
+  const dostupno=Math.min(w-52,380);
+  return Math.floor(dostupno/8);
+}
+
+function renderPloca(){
+  if(!igra)return;
+  // Desktop
+  renderPlocaEl(
+    document.getElementById('ploca'),
+    document.getElementById('kord-dolje'),
+    document.getElementById('kord-lijevo'),
+    60
+  );
+  // Mobile
+  const mobEl=document.getElementById('mob-ploca-el');
+  if(mobEl){
+    const vel=getMobVel();
+    renderPlocaEl(mobEl,document.getElementById('mob-kord-dolje'),document.getElementById('mob-kord-lijevo'),vel);
+  }
+}
+
+function azurirajInfoIgre(){
+  if(!igra)return;
+  const moja=igra.bijeliIme===ja?'b':'c',gb=moja==='b'?'c':'b';
+  const gornjIme=moja==='b'?igra.crniIme:igra.bijeliIme;
+  const gornjBoja=gb==='b'?'Bijele figure':'Crne figure';
+  const donjBoja=moja==='b'?'Bijele figure':'Crne figure';
+  const np=igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
+  const jeMoj=np===ja;
+  const potezHtml=`<span class="${jeMoj?'na-potezu':'ceka-potez'}">${jeMoj?'⟶ Vaš potez!':'Potez: '+np}</span>`;
+  // Desktop
+  document.getElementById('gornji-figura').textContent=FIG['K'][gb];
+  document.getElementById('gornji-ime').textContent=gornjIme;
+  document.getElementById('gornji-boja').textContent=gornjBoja;
+  document.getElementById('donji-figura').textContent=FIG['K'][moja];
+  document.getElementById('donji-ime').textContent=ja;
+  document.getElementById('donji-boja').textContent=donjBoja;
+  document.getElementById('potez-ind').innerHTML=potezHtml;
+  // Mobile
+  document.getElementById('mob-gornji-figura').textContent=FIG['K'][gb];
+  document.getElementById('mob-gornji-ime').textContent=gornjIme;
+  document.getElementById('mob-gornji-boja').textContent=gornjBoja;
+  document.getElementById('mob-donji-figura').textContent=FIG['K'][moja];
+  document.getElementById('mob-donji-ime').textContent=ja;
+  document.getElementById('mob-donji-boja').textContent=donjBoja;
+  document.getElementById('mob-potez-ind').innerHTML=potezHtml;
+}
+
+function azurirajNotaciju(){
+  if(!igra)return;
+  const html=igra.potezi.map((p,i)=>{const br=i%2===0?`<span style="color:rgba(245,230,200,.25);margin-right:2px">${Math.floor(i/2)+1}.</span>`:'';return`${br}<span class="notacija-potez">${p}</span>`;}).join('');
+  const el=document.getElementById('notacija');el.innerHTML=html;el.scrollTop=el.scrollHeight;
+  const em=document.getElementById('mob-notacija');if(em){em.innerHTML=html;em.scrollTop=em.scrollHeight;}
+}
+function setStatus(m){const e=document.getElementById('status-msg');if(e)e.textContent=m;const em=document.getElementById('mob-status-msg');if(em)em.textContent=m;}
+
+// ── Klik polje ───────────────────────────────────────────────
+function klikPolje(red,kol){
+  if(!igra||!igra_id)return;
+  const np=igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
+  if(np!==ja){setStatus('Nije vaš potez!');return;}
+  const fig=igra.ploca[red][kol];
+  if(odabrano){
+    const[or,ok]=odabrano;
+    if(moguci.some(p=>p[0]===red&&p[1]===kol)){izvrsiPotez(or,ok,red,kol);odabrano=null;moguci=[];return;}
+    if(fig?.boja===igra.naPotezu){odabrano=[red,kol];moguci=validniPotezi(igra,red,kol);renderPloca();return;}
+    odabrano=null;moguci=[];renderPloca();return;
+  }
+  if(fig?.boja===igra.naPotezu){odabrano=[red,kol];moguci=validniPotezi(igra,red,kol);renderPloca();}
+}
+
+// ── Izvrši potez ─────────────────────────────────────────────
+async function izvrsiPotez(or,ok,tr,tk){
+  const figura=igra.ploca[or][ok];
+  const hvat=!!(igra.ploca[tr][tk])||(figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1]);
+  if(figura.tip==='K'&&Math.abs(tk-ok)===2){const kr=figura.boja==='b'?7:0;if(tk===6){igra.ploca[kr][5]=igra.ploca[kr][7];igra.ploca[kr][7]=null;}else{igra.ploca[kr][3]=igra.ploca[kr][0];igra.ploca[kr][0]=null;}}
+  if(figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1])igra.ploca[tr+(figura.boja==='b'?1:-1)][tk]=null;
+  if(figura.tip==='K')igra.rokada[figura.boja]={kral:false,lijevi:false,desni:false};
+  if(figura.tip==='R'){if(ok===0)igra.rokada[figura.boja].lijevi=false;if(ok===7)igra.rokada[figura.boja].desni=false;}
+  igra.enPassant=null;
+  if(figura.tip==='P'&&Math.abs(tr-or)===2)igra.enPassant=[(or+tr)/2,ok];
+  igra.ploca[tr][tk]=figura;igra.ploca[or][ok]=null;igra.zadnjiPotez=[or,ok,tr,tk];
+  const prot=figura.boja==='b'?'c':'b';
+  const privSah=jeUSahu(igra,prot),privMat=privSah&&!imaLegalnih(igra,prot);
+  const sn=privMat?'#':privSah?'+':'';
+  const sl='abcdefgh';
+  let not=figura.tip!=='P'?figura.tip:'';
+  if(figura.tip==='K'&&Math.abs(tk-ok)===2){not=tk===6?'O-O':'O-O-O';}
+  else{if(hvat)not+=(figura.tip==='P'?sl[ok]:'')+  'x';not+=sl[tk]+(8-tr)+sn;}
+  const noviPotezi=[...igra.potezi,not];
+
+  if(figura.tip==='P'&&(tr===0||tr===7)){
+    await dbUpd(`igre/${igra_id}`,{ploca:sPloca(igra.ploca),rokada:igra.rokada,enPassant:igra.enPassant||null,zadnjiPotez:igra.zadnjiPotez,potezi:noviPotezi});
+    prikaziPromocijuModal(figura.boja,tr,tk);return;
+  }
+  await spremiPotez(noviPotezi);
+}
+
+async function spremiPotez(noviPotezi){
+  const novoNP=igra.naPotezu==='b'?'c':'b';
+  const upd={ploca:sPloca(igra.ploca),naPotezu:novoNP,rokada:igra.rokada,enPassant:igra.enPassant||null,zadnjiPotez:igra.zadnjiPotez,potezi:noviPotezi,status:'aktivna'};
+  const slj={...igra,naPotezu:novoNP};
+  if(!imaLegalnih(slj,novoNP)){
+    if(jeUSahu(slj,novoNP)){
+      upd.status='zavrsen';upd.kraj_razlog='mat';
+      upd.kraj_pobjednik=igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
+      upd.kraj_gubitnik=novoNP==='b'?igra.bijeliIme:igra.crniIme;
+      await spremiRezultat(igra.bijeliIme,igra.crniIme,igra.naPotezu==='b'?'b_pobijedio':'c_pobijedio');
+    }else{upd.status='zavrsen';upd.kraj_razlog='pat';await spremiRezultat(igra.bijeliIme,igra.crniIme,'remi');}
+    await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});
+  }
+  await dbUpd(`igre/${igra_id}`,upd);
+}
+
+function prikaziPromocijuModal(boja,tr,tk){
+  const c=document.getElementById('promo-figure');c.innerHTML='';
+  ['Q','R','B','N'].forEach(tip=>{const b=document.createElement('div');b.className='promo-figura';b.textContent=FIG[tip][boja];b.title={Q:'Kraljica',R:'Top',B:'Lovac',N:'Konj'}[tip];b.onclick=()=>promoviraj(tip,boja,tr,tk);c.appendChild(b);});
+  document.getElementById('modal-promocija').classList.add('aktivan');
+}
+
+async function promoviraj(tip,boja,tr,tk){
+  igra.ploca[tr][tk].tip=tip;
+  document.getElementById('modal-promocija').classList.remove('aktivan');
+  await spremiPotez(igra.potezi);
+}
+window.promoviraj=promoviraj;
+
+// ── Remi i predaja ───────────────────────────────────────────
+async function ponudiRemi(){if(!igra_id)return;await dbUpd(`igre/${igra_id}`,{status:'remi_ponuda',remi_ponudac:ja});}
+window.ponudiRemi=ponudiRemi;
+
+async function prihvatiRemi(){
+  document.getElementById('modal-remi').classList.remove('aktivan');
+  await spremiRezultat(igra.bijeliIme,igra.crniIme,'remi');
+  await dbUpd(`igre/${igra_id}`,{status:'zavrsen',kraj_razlog:'remi',kraj_pobjednik:null,kraj_gubitnik:null});
+  await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});
+}
+window.prihvatiRemi=prihvatiRemi;
+
+async function odbijRemi(){
+  document.getElementById('modal-remi').classList.remove('aktivan');
+  await dbUpd(`igre/${igra_id}`,{status:'aktivna',remi_ponudac:null});
+}
+window.odbijRemi=odbijRemi;
+
+async function predaj(){
+  if(!igra_id||!igra)return;
+  if(!confirm('Sigurno želite predati?'))return;
+  const pob=igra.bijeliIme===ja?igra.crniIme:igra.bijeliIme;
+  await spremiRezultat(igra.bijeliIme,igra.crniIme,ja===igra.bijeliIme?'c_pobijedio':'b_pobijedio');
+  await dbUpd(`igre/${igra_id}`,{status:'zavrsen',kraj_razlog:'predaja',kraj_pobjednik:pob,kraj_gubitnik:ja});
+  await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});
+}
+window.predaj=predaj;
+
+function prikaziKrajModal(razlog,pob,gub){
+  const ik={mat:'♛',pat:'½',remi:'½',predaja:'⚑'};
+  const na={mat:'Šah-mat!',pat:'Pat!',remi:'Remi!',predaja:'Predaja!'};
+  const po={mat:pob+' pobjeđuje!',pat:'Remi — pat pozicija',remi:'Dogovoreni remi',predaja:pob+' pobjeđuje predajom '+gub};
+  document.getElementById('kraj-ikona').textContent=ik[razlog]||'♟';
+  document.getElementById('kraj-naslov').textContent=na[razlog]||'Kraj igre';
+  document.getElementById('kraj-msg').textContent=po[razlog]||'';
+  document.getElementById('modal-kraj').classList.add('aktivan');
+}
+
+async function zatvoriKraj(){
+  document.getElementById('modal-kraj').classList.remove('aktivan');
+  igra=null;igra_id=null;odabrano=null;moguci=[];
+  document.getElementById('prikaz-igre').style.display='none';
+  document.getElementById('prikaz-cekanja').style.display='flex';
+  document.getElementById('izazov-prikaz').innerHTML='';
+  document.getElementById('mob-prikaz-igre').style.display='none';
+  document.getElementById('mob-prikaz-cekanja').style.display='flex';
+  document.getElementById('mob-izazov-prikaz').innerHTML='';
+  if(ja)await dbUpd(`online/${ja}`,{igra_id:null});
+  azurirajStatistike();azurirajPovijest('sve');
+}
+window.zatvoriKraj=zatvoriKraj;
+
+// ── Rezultati ────────────────────────────────────────────────
+async function spremiRezultat(bijeli,crni,ishod){
+  await set(push(ref(db,'rezultati')),{bijeli,crni,ishod,datum:new Date().toLocaleDateString('hr-HR'),ts:Date.now()});
+}
+
+async function azurirajStatistike(){
+  const[ig,re]=await Promise.all([dbGet('igraci'),dbGet('rezultati')]);
+  const stat={};
+  Object.keys(ig||{}).forEach(i=>stat[i]={p:0,i:0,r:0});
+  Object.values(re||{}).forEach(m=>{
+    if(!stat[m.bijeli])stat[m.bijeli]={p:0,i:0,r:0};
+    if(!stat[m.crni])stat[m.crni]={p:0,i:0,r:0};
+    if(m.ishod==='b_pobijedio'){stat[m.bijeli].p++;stat[m.crni].i++;}
+    else if(m.ishod==='c_pobijedio'){stat[m.crni].p++;stat[m.bijeli].i++;}
+    else{stat[m.bijeli].r++;stat[m.crni].r++;}
+  });
+  const redovi=Object.entries(stat).sort((a,b)=>b[1].p-a[1].p).map(([n,s])=>`<tr><td class="stat-ime">${n}</td><td style="color:#81C784">${s.p}</td><td style="color:#EF9A9A">${s.i}</td><td style="color:var(--text-zlatni)">${s.r}</td></tr>`).join('');
+  const tijelo=document.getElementById('stat-tijelo');if(tijelo)tijelo.innerHTML=redovi;
+  const mobTijelo=document.getElementById('mob-stat-tijelo');if(mobTijelo)mobTijelo.innerHTML=redovi;
+  const filHtml=`<button class="filter-gumb aktivan" onclick="filtrirajPovijest('sve',this)">Sve</button>`+Object.keys(ig||{}).map(n=>`<button class="filter-gumb" onclick="filtrirajPovijest('${n}',this)">${n}</button>`).join('');
+  const fil=document.getElementById('filteri');if(fil)fil.innerHTML=filHtml;
+  const mobFil=document.getElementById('mob-filteri');if(mobFil)mobFil.innerHTML=filHtml.replace(/onclick="filtrirajPovijest\(/g,"onclick="filtrirajPovijestMob(");
+}
+
+async function azurirajPovijest(filter){
+  const re=await dbGet('rezultati');
+  let lista=Object.values(re||{}).sort((a,b)=>b.ts-a.ts);
+  if(filter!=='sve')lista=lista.filter(r=>r.bijeli===filter||r.crni===filter);
+  const html=lista.length?lista.slice(0,20).map(r=>{
+    const bp=r.ishod==='b_pobijedio',cp=r.ishod==='c_pobijedio',rem=r.ishod==='remi';
+    return`<div class="meč-kartica"><div class="meč-igraci"><span class="meč-igrac">♔ ${r.bijeli}</span><span class="meč-vs">vs</span><span class="meč-igrac">♚ ${r.crni}</span></div><div class="meč-rezultat"><span class="rezultat-bedž ${bp?'pobjeda':cp?'poraz':rem?'remi-bedž':''}">${bp?'✓':cp?'✗':'½'}</span><span style="color:rgba(245,230,200,.3)">—</span><span class="rezultat-bedž ${cp?'pobjeda':bp?'poraz':rem?'remi-bedž':''}">${cp?'✓':bp?'✗':'½'}</span></div><div class="meč-datum">${r.datum}</div></div>`;
+  }).join(''):'<div class="nema-rezultata">Nema odigranih partija</div>';
+  const div=document.getElementById('povijest-lista');if(div)div.innerHTML=html;
+  const mobDiv=document.getElementById('mob-povijest-lista');if(mobDiv)mobDiv.innerHTML=html;
+}
+window.filtrirajPovijest=(f,g)=>{document.querySelectorAll('#filteri .filter-gumb').forEach(x=>x.classList.remove('aktivan'));g.classList.add('aktivan');azurirajPovijest(f);};
+window.filtrirajPovijestMob=(f,g)=>{document.querySelectorAll('#mob-filteri .filter-gumb').forEach(x=>x.classList.remove('aktivan'));g.classList.add('aktivan');azurirajPovijest(f);};
+
+// ── Admin ────────────────────────────────────────────────────
+window.otvoriAdmin=()=>{document.getElementById('ekran-prijava').classList.remove('aktivan');document.getElementById('ekran-admin').classList.add('aktivan');document.getElementById('admin-sadrzaj').style.display='none';document.getElementById('admin-loz-forma').style.display='block';document.getElementById('unos-lozinke').value='';};
+window.zatvoriAdmin=()=>{document.getElementById('ekran-admin').classList.remove('aktivan');document.getElementById('ekran-prijava').classList.add('aktivan');};
+window.provjeriLozinku=async()=>{const l=document.getElementById('unos-lozinke').value,t=await dbGet('config/admin_loz');if(l===(t||'admin123')){document.getElementById('admin-loz-forma').style.display='none';document.getElementById('admin-sadrzaj').style.display='block';renderAdminListu();}else document.getElementById('greska-loz').textContent='Pogrešna lozinka.';};
+async function renderAdminListu(){const ig=await dbGet('igraci');const l=document.getElementById('admin-lista');l.innerHTML=ig?Object.keys(ig).map(n=>`<div class="igrac-red-admin"><span>♟ ${n}</span><button class="ukloni-gumb" onclick="ukloniIgraca('${n}')">Ukloni</button></div>`).join(''):'<div class="nema-rezultata">Nema igrača</div>';}
+window.dodajIgraca=async()=>{const n=document.getElementById('novi-igrac').value.trim(),gr=document.getElementById('greska-dodaj');if(!n){gr.textContent='Unesite ime.';return;}const ig=await dbGet('igraci');if(ig&&Object.keys(ig).some(k=>k.toLowerCase()===n.toLowerCase())){gr.textContent='Igrač već postoji.';return;}await dbSet(`igraci/${n}`,true);document.getElementById('novi-igrac').value='';gr.textContent='';renderAdminListu();};
+window.ukloniIgraca=async n=>{if(!confirm(`Ukloniti "${n}"?`))return;await dbDel(`igraci/${n}`);renderAdminListu();};
+window.promijeniLozinku=async()=>{const n=document.getElementById('nova-loz').value;if(!n||n.length<3){alert('Lozinka mora imati barem 3 znaka.');return;}await dbSet('config/admin_loz',n);document.getElementById('nova-loz').value='';alert('Lozinka promijenjena!');};
+window.resetirajRezultate=async()=>{if(!confirm('Obrisati SVE rezultate?'))return;await dbDel('rezultati');alert('Rezultati obrisani.');};
+
+document.getElementById('unos-ime').addEventListener('keydown',e=>{if(e.key==='Enter')prijava();});
+
+// ── Mob Tab navigacija ───────────────────────────────────────
+window.mobTab=(id,gumb)=>{
+  document.querySelectorAll('.mob-panel').forEach(p=>p.classList.remove('aktivan'));
+  document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('aktivan'));
+  const panel=document.getElementById('mob-'+id);
+  if(panel)panel.classList.add('aktivan');
+  gumb.classList.add('aktivan');
+};
+
+// Resize - re-render ploče na promjenu veličine prozora
+window.addEventListener('resize',()=>{ if(igra)renderPloca(); });
+
+// posaljiIzazov - obavijesti mob o čekanju
+const _origPosalji=window.posaljiIzazov;
+window.posaljiIzazov=async(prot)=>{
+  document.getElementById('mob-podtekst-dobrodosli').textContent=`Izazov poslan ${prot}u...`;
+  document.getElementById('mob-izazov-prikaz').innerHTML=`<p style="color:var(--text-zlatni);font-style:italic;margin-top:12px" class="puls">⏳ Čekanje na odgovor...</p>`;
+  await _origPosalji(prot);
+};
+</script>
+</body>
+</html>
