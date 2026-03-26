@@ -984,7 +984,7 @@ async function azurirajStatistike(){
   const mobTijelo=document.getElementById('mob-stat-tijelo');if(mobTijelo)mobTijelo.innerHTML=redovi;
   const filHtml=`<button class="filter-gumb aktivan" onclick="filtrirajPovijest('sve',this)">Sve</button>`+Object.keys(ig||{}).map(n=>`<button class="filter-gumb" onclick="filtrirajPovijest('${n}',this)">${n}</button>`).join('');
   const fil=document.getElementById('filteri');if(fil)fil.innerHTML=filHtml;
-  const mobFil=document.getElementById('mob-filteri');if(mobFil)mobFil.innerHTML=filHtml.replace(/onclick="filtrirajPovijest\(/g,"onclick="filtrirajPovijestMob(");
+  const mobFil=document.getElementById('mob-filteri');if(mobFil)mobFil.innerHTML=filHtml.replace(/filtrirajPovijest/g,'filtrirajPovijestMob');
 }
 
 async function azurirajPovijest(filter){
