@@ -497,6 +497,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getDatabase, ref, set, get, onValue, update, remove, push, onDisconnect }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+// Expose all functions to global scope so onclick= attributes work
+// (ES modules are scoped by default)
+
 const app = initializeApp({
   apiKey:"AIzaSyAgFjzedFqwTOSl1ehKMmrHk6VUWeR7KDk",
   authDomain:"sahisti-af752.firebaseapp.com",
@@ -611,7 +614,7 @@ async function prijava(){
   pokrenuiListenere();
   azurirajStatistike();azurirajPovijest('sve');
 }
-window.prijava=prijava;
+window._prijava=prijava;
 
 async function odjava(){
   if(igra_id){if(!confirm('Aktivna igra prekida se. Sigurno?'))return;await dbUpd(`igre/${igra_id}`,{status:'prekinuta',prekinuo:ja});await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});}
@@ -623,7 +626,7 @@ async function odjava(){
   document.getElementById('prikaz-igre').style.display='none';
   document.getElementById('prikaz-cekanja').style.display='flex';
 }
-window.odjava=odjava;
+window._odjava=odjava;
 
 // ── Listeneri ────────────────────────────────────────────────
 function pokrenuiListenere(){
@@ -689,7 +692,7 @@ async function posaljiIzazov(prot){
     else if(val.prihvacen===false){await dbDel(`izazovi_odg/${ja}`);document.getElementById('podtekst-dobrodosli').textContent=`${prot} je odbio izazov.`;document.getElementById('izazov-prikaz').innerHTML='';}
   });
 }
-window.posaljiIzazov=posaljiIzazov;
+window._posaljiIzazov=posaljiIzazov;
 
 function prikaziIzazov(data){
   const html=`<div class="izazov-kartica">
@@ -717,14 +720,14 @@ async function prihvatiIzazov(od){
   await dbUpd(`online/${ja}`,{igra_id:id});await dbUpd(`online/${od}`,{igra_id:id});
   spojiBezIgru(id);
 }
-window.prihvatiIzazov=prihvatiIzazov;
+window._prihvatiIzazov=prihvatiIzazov;
 
 async function odbijIzazov(od){
   await dbDel(`izazovi/${ja}`);
   await dbSet(`izazovi_odg/${od}`,{prihvacen:false});
   document.getElementById('izazov-prikaz').innerHTML='';
 }
-window.odbijIzazov=odbijIzazov;
+window._odbijIzazov=odbijIzazov;
 
 // ── Spoji na igru ─────────────────────────────────────────────
 function isMobile(){return window.innerWidth<=900;}
@@ -906,11 +909,11 @@ async function promoviraj(tip,boja,tr,tk){
   document.getElementById('modal-promocija').classList.remove('aktivan');
   await spremiPotez(igra.potezi);
 }
-window.promoviraj=promoviraj;
+window._promoviraj=promoviraj;
 
 // ── Remi i predaja ───────────────────────────────────────────
 async function ponudiRemi(){if(!igra_id)return;await dbUpd(`igre/${igra_id}`,{status:'remi_ponuda',remi_ponudac:ja});}
-window.ponudiRemi=ponudiRemi;
+window._ponudiRemi=ponudiRemi;
 
 async function prihvatiRemi(){
   document.getElementById('modal-remi').classList.remove('aktivan');
@@ -918,13 +921,13 @@ async function prihvatiRemi(){
   await dbUpd(`igre/${igra_id}`,{status:'zavrsen',kraj_razlog:'remi',kraj_pobjednik:null,kraj_gubitnik:null});
   await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});
 }
-window.prihvatiRemi=prihvatiRemi;
+window._prihvatiRemi=prihvatiRemi;
 
 async function odbijRemi(){
   document.getElementById('modal-remi').classList.remove('aktivan');
   await dbUpd(`igre/${igra_id}`,{status:'aktivna',remi_ponudac:null});
 }
-window.odbijRemi=odbijRemi;
+window._odbijRemi=odbijRemi;
 
 async function predaj(){
   if(!igra_id||!igra)return;
@@ -934,7 +937,7 @@ async function predaj(){
   await dbUpd(`igre/${igra_id}`,{status:'zavrsen',kraj_razlog:'predaja',kraj_pobjednik:pob,kraj_gubitnik:ja});
   await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});
 }
-window.predaj=predaj;
+window._predaj=predaj;
 
 function prikaziKrajModal(razlog,pob,gub){
   const ik={mat:'♛',pat:'½',remi:'½',predaja:'⚑'};
@@ -958,7 +961,7 @@ async function zatvoriKraj(){
   if(ja)await dbUpd(`online/${ja}`,{igra_id:null});
   azurirajStatistike();azurirajPovijest('sve');
 }
-window.zatvoriKraj=zatvoriKraj;
+window._zatvoriKraj=zatvoriKraj;
 
 // ── Rezultati ────────────────────────────────────────────────
 async function spremiRezultat(bijeli,crni,ishod){
@@ -995,23 +998,23 @@ async function azurirajPovijest(filter){
   const div=document.getElementById('povijest-lista');if(div)div.innerHTML=html;
   const mobDiv=document.getElementById('mob-povijest-lista');if(mobDiv)mobDiv.innerHTML=html;
 }
-window.filtrirajPovijest=(f,g)=>{document.querySelectorAll('#filteri .filter-gumb').forEach(x=>x.classList.remove('aktivan'));g.classList.add('aktivan');azurirajPovijest(f);};
-window.filtrirajPovijestMob=(f,g)=>{document.querySelectorAll('#mob-filteri .filter-gumb').forEach(x=>x.classList.remove('aktivan'));g.classList.add('aktivan');azurirajPovijest(f);};
+window._filtrirajPovijest=(f,g)=>{document.querySelectorAll('#filteri .filter-gumb').forEach(x=>x.classList.remove('aktivan'));g.classList.add('aktivan');azurirajPovijest(f);};
+window._filtrirajPovijestMob=(f,g)=>{document.querySelectorAll('#mob-filteri .filter-gumb').forEach(x=>x.classList.remove('aktivan'));g.classList.add('aktivan');azurirajPovijest(f);};
 
 // ── Admin ────────────────────────────────────────────────────
-window.otvoriAdmin=()=>{document.getElementById('ekran-prijava').classList.remove('aktivan');document.getElementById('ekran-admin').classList.add('aktivan');document.getElementById('admin-sadrzaj').style.display='none';document.getElementById('admin-loz-forma').style.display='block';document.getElementById('unos-lozinke').value='';};
-window.zatvoriAdmin=()=>{document.getElementById('ekran-admin').classList.remove('aktivan');document.getElementById('ekran-prijava').classList.add('aktivan');};
-window.provjeriLozinku=async()=>{const l=document.getElementById('unos-lozinke').value,t=await dbGet('config/admin_loz');if(l===(t||'admin123')){document.getElementById('admin-loz-forma').style.display='none';document.getElementById('admin-sadrzaj').style.display='block';renderAdminListu();}else document.getElementById('greska-loz').textContent='Pogrešna lozinka.';};
+window._otvoriAdmin=()=>{document.getElementById('ekran-prijava').classList.remove('aktivan');document.getElementById('ekran-admin').classList.add('aktivan');document.getElementById('admin-sadrzaj').style.display='none';document.getElementById('admin-loz-forma').style.display='block';document.getElementById('unos-lozinke').value='';};
+window._zatvoriAdmin=()=>{document.getElementById('ekran-admin').classList.remove('aktivan');document.getElementById('ekran-prijava').classList.add('aktivan');};
+window._provjeriLozinku=async()=>{const l=document.getElementById('unos-lozinke').value,t=await dbGet('config/admin_loz');if(l===(t||'admin123')){document.getElementById('admin-loz-forma').style.display='none';document.getElementById('admin-sadrzaj').style.display='block';renderAdminListu();}else document.getElementById('greska-loz').textContent='Pogrešna lozinka.';};
 async function renderAdminListu(){const ig=await dbGet('igraci');const l=document.getElementById('admin-lista');l.innerHTML=ig?Object.keys(ig).map(n=>`<div class="igrac-red-admin"><span>♟ ${n}</span><button class="ukloni-gumb" onclick="ukloniIgraca('${n}')">Ukloni</button></div>`).join(''):'<div class="nema-rezultata">Nema igrača</div>';}
-window.dodajIgraca=async()=>{const n=document.getElementById('novi-igrac').value.trim(),gr=document.getElementById('greska-dodaj');if(!n){gr.textContent='Unesite ime.';return;}const ig=await dbGet('igraci');if(ig&&Object.keys(ig).some(k=>k.toLowerCase()===n.toLowerCase())){gr.textContent='Igrač već postoji.';return;}await dbSet(`igraci/${n}`,true);document.getElementById('novi-igrac').value='';gr.textContent='';renderAdminListu();};
-window.ukloniIgraca=async n=>{if(!confirm(`Ukloniti "${n}"?`))return;await dbDel(`igraci/${n}`);renderAdminListu();};
-window.promijeniLozinku=async()=>{const n=document.getElementById('nova-loz').value;if(!n||n.length<3){alert('Lozinka mora imati barem 3 znaka.');return;}await dbSet('config/admin_loz',n);document.getElementById('nova-loz').value='';alert('Lozinka promijenjena!');};
-window.resetirajRezultate=async()=>{if(!confirm('Obrisati SVE rezultate?'))return;await dbDel('rezultati');alert('Rezultati obrisani.');};
+window._dodajIgraca=async()=>{const n=document.getElementById('novi-igrac').value.trim(),gr=document.getElementById('greska-dodaj');if(!n){gr.textContent='Unesite ime.';return;}const ig=await dbGet('igraci');if(ig&&Object.keys(ig).some(k=>k.toLowerCase()===n.toLowerCase())){gr.textContent='Igrač već postoji.';return;}await dbSet(`igraci/${n}`,true);document.getElementById('novi-igrac').value='';gr.textContent='';renderAdminListu();};
+window._ukloniIgraca=async n=>{if(!confirm(`Ukloniti "${n}"?`))return;await dbDel(`igraci/${n}`);renderAdminListu();};
+window._promijeniLozinku=async()=>{const n=document.getElementById('nova-loz').value;if(!n||n.length<3){alert('Lozinka mora imati barem 3 znaka.');return;}await dbSet('config/admin_loz',n);document.getElementById('nova-loz').value='';alert('Lozinka promijenjena!');};
+window._resetirajRezultate=async()=>{if(!confirm('Obrisati SVE rezultate?'))return;await dbDel('rezultati');alert('Rezultati obrisani.');};
 
 document.getElementById('unos-ime').addEventListener('keydown',e=>{if(e.key==='Enter')prijava();});
 
 // ── Mob Tab navigacija ───────────────────────────────────────
-window.mobTab=(id,gumb)=>{
+window._mobTab=(id,gumb)=>{
   document.querySelectorAll('.mob-panel').forEach(p=>p.classList.remove('aktivan'));
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('aktivan'));
   const panel=document.getElementById('mob-'+id);
@@ -1024,11 +1027,36 @@ window.addEventListener('resize',()=>{ if(igra)renderPloca(); });
 
 // posaljiIzazov - obavijesti mob o čekanju
 const _origPosalji=window.posaljiIzazov;
-window.posaljiIzazov=async(prot)=>{
+window._posaljiIzazov=async(prot)=>{
   document.getElementById('mob-podtekst-dobrodosli').textContent=`Izazov poslan ${prot}u...`;
   document.getElementById('mob-izazov-prikaz').innerHTML=`<p style="color:var(--text-zlatni);font-style:italic;margin-top:12px" class="puls">⏳ Čekanje na odgovor...</p>`;
   await _origPosalji(prot);
 };
+</script>
+<script>
+// Proxy functions - because ES module functions need explicit window export
+// These ensure onclick= attributes work before module fully loads
+function prijava(){window._prijava&&window._prijava();}
+function odjava(){window._odjava&&window._odjava();}
+function otvoriAdmin(){window._otvoriAdmin&&window._otvoriAdmin();}
+function zatvoriAdmin(){window._zatvoriAdmin&&window._zatvoriAdmin();}
+function provjeriLozinku(){window._provjeriLozinku&&window._provjeriLozinku();}
+function dodajIgraca(){window._dodajIgraca&&window._dodajIgraca();}
+function promijeniLozinku(){window._promijeniLozinku&&window._promijeniLozinku();}
+function resetirajRezultate(){window._resetirajRezultate&&window._resetirajRezultate();}
+function ponudiRemi(){window._ponudiRemi&&window._ponudiRemi();}
+function prihvatiRemi(){window._prihvatiRemi&&window._prihvatiRemi();}
+function odbijRemi(){window._odbijRemi&&window._odbijRemi();}
+function predaj(){window._predaj&&window._predaj();}
+function zatvoriKraj(){window._zatvoriKraj&&window._zatvoriKraj();}
+function posaljiIzazov(n){window._posaljiIzazov&&window._posaljiIzazov(n);}
+function prihvatiIzazov(n){window._prihvatiIzazov&&window._prihvatiIzazov(n);}
+function odbijIzazov(n){window._odbijIzazov&&window._odbijIzazov(n);}
+function promoviraj(t,b,r,k){window._promoviraj&&window._promoviraj(t,b,r,k);}
+function ukloniIgraca(n){window._ukloniIgraca&&window._ukloniIgraca(n);}
+function mobTab(id,g){window._mobTab&&window._mobTab(id,g);}
+function filtrirajPovijest(f,g){window._filtrirajPovijest&&window._filtrirajPovijest(f,g);}
+function filtrirajPovijestMob(f,g){window._filtrirajPovijestMob&&window._filtrirajPovijestMob(f,g);}
 </script>
 </body>
 </html>
