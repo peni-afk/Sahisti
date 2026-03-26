@@ -575,7 +575,7 @@ function sPloca(p){return p.map(r=>r.map(f=>f?`${f.tip}${f.boja}`:'0'));}
 function dPloca(d){return d.map(r=>r.map(p=>p==='0'?null:{tip:p[0],boja:p[1]}));}
 
 // ── Stanje ──────────────────────────────────────────────────
-let ja=null,igra=null,igra_id=null,odabrano=null,moguci=[];
+let ja=null,igra=null,igra_id=null,odabrano=null,moguci=[],imaAktivniIzazov=false;
 
 // ── DB helpers ───────────────────────────────────────────────
 const dbGet=async p=>{const s=await get(ref(db,p));return s.exists()?s.val():null;};
@@ -619,7 +619,7 @@ window._prijava=prijava;
 async function odjava(){
   if(igra_id){if(!confirm('Aktivna igra prekida se. Sigurno?'))return;await dbUpd(`igre/${igra_id}`,{status:'prekinuta',prekinuo:ja});await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});}
   await dbDel(`online/${ja}`);await dbDel(`izazovi/${ja}`);
-  ja=null;igra=null;igra_id=null;odabrano=null;moguci=[];
+  ja=null;igra=null;igra_id=null;odabrano=null;moguci=[];imaAktivniIzazov=false;
   document.getElementById('ekran-glavni').classList.remove('aktivan');
   document.getElementById('ekran-prijava').classList.add('aktivan');
   document.getElementById('unos-ime').value='';
@@ -632,8 +632,14 @@ window._odjava=odjava;
 function pokrenuiListenere(){
   dbListen('online',data=>{renderOnline(data||{});});
   dbListen(`izazovi/${ja}`,data=>{
-    if(data&&!igra_id)prikaziIzazov(data);
-    else if(!igra_id)document.getElementById('izazov-prikaz').innerHTML='';
+    if(data&&!igra_id){
+      prikaziIzazov(data);
+    } else if(!igra_id){
+      // Nema izazova - očisti i prikaži gumbe
+      imaAktivniIzazov=false;
+      document.getElementById('izazov-prikaz').innerHTML='';
+      document.getElementById('mob-izazov-prikaz').innerHTML='';
+    }
   });
 }
 
@@ -663,11 +669,12 @@ function renderOnline(online){
 }
 
 function renderGumbeCekanja(slobodni){
+  // Ne dirај UI ako je izazov aktivan ili u igri
+  if(imaAktivniIzazov||igra_id)return;
   const ip=document.getElementById('izazov-prikaz');
   const mip=document.getElementById('mob-izazov-prikaz');
   document.getElementById('tekst-dobrodosli').textContent=`Dobrodošli, ${ja}!`;
   document.getElementById('mob-tekst-dobrodosli').textContent=`Dobrodošli, ${ja}!`;
-  if(document.querySelector('.izazov-kartica'))return;
   if(slobodni.length){
     document.getElementById('podtekst-dobrodosli').textContent='Izazovite igrača:';
     document.getElementById('mob-podtekst-dobrodosli').textContent='Izazovite igrača:';
@@ -683,18 +690,33 @@ function renderGumbeCekanja(slobodni){
 // ── Izazov ───────────────────────────────────────────────────
 async function posaljiIzazov(prot){
   if(await dbGet(`izazovi/${prot}`)){alert(`${prot} već ima aktivan izazov.`);return;}
+  imaAktivniIzazov=true;
   await dbSet(`izazovi/${prot}`,{od:ja,ts:Date.now()});
+  const cekHtml=`<p style="color:var(--text-zlatni);font-style:italic;margin-top:12px" class="puls">⏳ Čekanje na odgovor od ${prot}...</p>`;
   document.getElementById('podtekst-dobrodosli').textContent=`Izazov poslan ${prot}u...`;
-  document.getElementById('izazov-prikaz').innerHTML=`<p style="color:var(--text-zlatni);font-style:italic;margin-top:12px" class="puls">⏳ Čekanje na odgovor...</p>`;
+  document.getElementById('mob-podtekst-dobrodosli').textContent=`Izazov poslan ${prot}u...`;
+  document.getElementById('izazov-prikaz').innerHTML=cekHtml;
+  document.getElementById('mob-izazov-prikaz').innerHTML=cekHtml;
   dbListen(`izazovi_odg/${ja}`,async val=>{
     if(!val)return;
-    if(val.prihvacen&&val.igra_id){await dbDel(`izazovi_odg/${ja}`);spojiBezIgru(val.igra_id);}
-    else if(val.prihvacen===false){await dbDel(`izazovi_odg/${ja}`);document.getElementById('podtekst-dobrodosli').textContent=`${prot} je odbio izazov.`;document.getElementById('izazov-prikaz').innerHTML='';}
+    if(val.prihvacen&&val.igra_id){
+      imaAktivniIzazov=false;
+      await dbDel(`izazovi_odg/${ja}`);
+      spojiBezIgru(val.igra_id);
+    } else if(val.prihvacen===false){
+      imaAktivniIzazov=false;
+      await dbDel(`izazovi_odg/${ja}`);
+      document.getElementById('podtekst-dobrodosli').textContent=`${prot} je odbio izazov.`;
+      document.getElementById('mob-podtekst-dobrodosli').textContent=`${prot} je odbio izazov.`;
+      document.getElementById('izazov-prikaz').innerHTML='';
+      document.getElementById('mob-izazov-prikaz').innerHTML='';
+    }
   });
 }
 window._posaljiIzazov=posaljiIzazov;
 
 function prikaziIzazov(data){
+  imaAktivniIzazov=true;
   const html=`<div class="izazov-kartica">
     <div class="izazov-naslov">⚔ Izazov od ${data.od}!</div>
     <p style="color:rgba(245,230,200,.6);font-style:italic">${data.od} vas izaziva na partiju šaha</p>
@@ -723,9 +745,11 @@ async function prihvatiIzazov(od){
 window._prihvatiIzazov=prihvatiIzazov;
 
 async function odbijIzazov(od){
+  imaAktivniIzazov=false;
   await dbDel(`izazovi/${ja}`);
   await dbSet(`izazovi_odg/${od}`,{prihvacen:false});
   document.getElementById('izazov-prikaz').innerHTML='';
+  document.getElementById('mob-izazov-prikaz').innerHTML='';
 }
 window._odbijIzazov=odbijIzazov;
 
