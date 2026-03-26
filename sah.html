@@ -494,11 +494,8 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update, remove, push, onDisconnect }
+import { getDatabase, ref, set, get, onValue, update, remove, push, onDisconnect, off }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-// Expose all functions to global scope so onclick= attributes work
-// (ES modules are scoped by default)
 
 const app = initializeApp({
   apiKey:"AIzaSyAgFjzedFqwTOSl1ehKMmrHk6VUWeR7KDk",
@@ -511,576 +508,817 @@ const app = initializeApp({
 });
 const db = getDatabase(app);
 
-// ── Šahovska logika ─────────────────────────────────────────
-const FIG={K:{b:'♔',c:'♚'},Q:{b:'♕',c:'♛'},R:{b:'♖',c:'♜'},B:{b:'♗',c:'♝'},N:{b:'♘',c:'♞'},P:{b:'♙',c:'♟'}};
+// ═══════════════════════════════════════════════
+// ŠAHOVSKA LOGIKA
+// ═══════════════════════════════════════════════
+const FIG = {K:{b:'♔',c:'♚'},Q:{b:'♕',c:'♛'},R:{b:'♖',c:'♜'},B:{b:'♗',c:'♝'},N:{b:'♘',c:'♞'},P:{b:'♙',c:'♟'}};
 
-function novaPloca(){
-  const p=Array(8).fill(null).map(()=>Array(8).fill(null));
-  ['R','N','B','Q','K','B','N','R'].forEach((f,i)=>{p[0][i]={tip:f,boja:'c'};p[7][i]={tip:f,boja:'b'};});
-  for(let i=0;i<8;i++){p[1][i]={tip:'P',boja:'c'};p[6][i]={tip:'P',boja:'b'};}
+function novaPloca() {
+  const p = Array(8).fill(null).map(() => Array(8).fill(null));
+  ['R','N','B','Q','K','B','N','R'].forEach((f,i) => { p[0][i]={tip:f,boja:'c'}; p[7][i]={tip:f,boja:'b'}; });
+  for (let i=0;i<8;i++) { p[1][i]={tip:'P',boja:'c'}; p[6][i]={tip:'P',boja:'b'}; }
   return p;
 }
-const vP=(r,k)=>r>=0&&r<8&&k>=0&&k<8;
 
-function siroviPotezi(ploca,red,kol,igra){
-  const f=ploca[red][kol]; if(!f)return[];
-  const{tip,boja}=f,prot=boja==='b'?'c':'b',potezi=[];
-  const dodaj=(r,k)=>{if(vP(r,k)&&(!ploca[r][k]||ploca[r][k].boja!==boja))potezi.push([r,k]);};
-  const linija=(dr,dk)=>{let r=red+dr,k=kol+dk;while(vP(r,k)){if(ploca[r][k]){if(ploca[r][k].boja!==boja)potezi.push([r,k]);break;}potezi.push([r,k]);r+=dr;k+=dk;}};
-  if(tip==='P'){
-    const sm=boja==='b'?-1:1,poc=boja==='b'?6:1;
-    if(vP(red+sm,kol)&&!ploca[red+sm][kol]){potezi.push([red+sm,kol]);if(red===poc&&!ploca[red+2*sm][kol])potezi.push([red+2*sm,kol]);}
-    [-1,1].forEach(dk=>{if(vP(red+sm,kol+dk)){if(ploca[red+sm][kol+dk]?.boja===prot)potezi.push([red+sm,kol+dk]);if(igra?.enPassant&&igra.enPassant[0]===red+sm&&igra.enPassant[1]===kol+dk)potezi.push([red+sm,kol+dk]);}});
-  }else if(tip==='N'){[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dk])=>dodaj(red+dr,kol+dk));
-  }else if(tip==='B'){[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dk])=>linija(dr,dk));
-  }else if(tip==='R'){[[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dk])=>linija(dr,dk));
-  }else if(tip==='Q'){[[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dk])=>linija(dr,dk));
-  }else if(tip==='K'){
+const vP = (r,k) => r>=0&&r<8&&k>=0&&k<8;
+
+function siroviPotezi(ploca, red, kol, igra) {
+  const f = ploca[red][kol]; if (!f) return [];
+  const {tip,boja} = f, prot = boja==='b'?'c':'b', potezi = [];
+  const dodaj = (r,k) => { if (vP(r,k)&&(!ploca[r][k]||ploca[r][k].boja!==boja)) potezi.push([r,k]); };
+  const linija = (dr,dk) => { let r=red+dr,k=kol+dk; while(vP(r,k)){if(ploca[r][k]){if(ploca[r][k].boja!==boja)potezi.push([r,k]);break;} potezi.push([r,k]);r+=dr;k+=dk;} };
+  if (tip==='P') {
+    const sm=boja==='b'?-1:1, poc=boja==='b'?6:1;
+    if (vP(red+sm,kol)&&!ploca[red+sm][kol]) { potezi.push([red+sm,kol]); if(red===poc&&!ploca[red+2*sm][kol]) potezi.push([red+2*sm,kol]); }
+    [-1,1].forEach(dk => { if(vP(red+sm,kol+dk)) { if(ploca[red+sm][kol+dk]?.boja===prot) potezi.push([red+sm,kol+dk]); if(igra?.enPassant&&igra.enPassant[0]===red+sm&&igra.enPassant[1]===kol+dk) potezi.push([red+sm,kol+dk]); } });
+  } else if (tip==='N') { [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dk])=>dodaj(red+dr,kol+dk));
+  } else if (tip==='B') { [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dk])=>linija(dr,dk));
+  } else if (tip==='R') { [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dk])=>linija(dr,dk));
+  } else if (tip==='Q') { [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dk])=>linija(dr,dk));
+  } else if (tip==='K') {
     [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dk])=>dodaj(red+dr,kol+dk));
-    if(igra){const rok=igra.rokada[boja],kr=boja==='b'?7:0;
-      if(rok?.kral&&red===kr&&kol===4){
-        if(rok.desni&&!ploca[kr][5]&&!ploca[kr][6])potezi.push([kr,6]);
-        if(rok.lijevi&&!ploca[kr][3]&&!ploca[kr][2]&&!ploca[kr][1])potezi.push([kr,2]);
+    if (igra) {
+      const rok=igra.rokada[boja], kr=boja==='b'?7:0;
+      if (rok?.kral&&red===kr&&kol===4) {
+        if (rok.desni&&!ploca[kr][5]&&!ploca[kr][6]) potezi.push([kr,6]);
+        if (rok.lijevi&&!ploca[kr][3]&&!ploca[kr][2]&&!ploca[kr][1]) potezi.push([kr,2]);
       }
     }
   }
   return potezi;
 }
 
-function jeNapadnuto(ploca,red,kol,napadac){
-  for(let r=0;r<8;r++)for(let k=0;k<8;k++){
-    const f=ploca[r][k];if(!f||f.boja!==napadac)continue;
-    if(siroviPotezi(ploca,r,k,null).some(p=>p[0]===red&&p[1]===kol))return true;
-  }return false;
+function jeNapadnuto(ploca, red, kol, napadac) {
+  for (let r=0;r<8;r++) for (let k=0;k<8;k++) {
+    const f=ploca[r][k]; if(!f||f.boja!==napadac) continue;
+    if (siroviPotezi(ploca,r,k,null).some(p=>p[0]===red&&p[1]===kol)) return true;
+  }
+  return false;
 }
-function nadjiKralja(ploca,boja){for(let r=0;r<8;r++)for(let k=0;k<8;k++)if(ploca[r][k]?.tip==='K'&&ploca[r][k].boja===boja)return[r,k];return null;}
-function jeUSahu(igra,boja){const[kr,kk]=nadjiKralja(igra.ploca,boja)||[];if(kr==null)return false;return jeNapadnuto(igra.ploca,kr,kk,boja==='b'?'c':'b');}
-function imaLegalnih(igra,boja){for(let r=0;r<8;r++)for(let k=0;k<8;k++)if(igra.ploca[r][k]?.boja===boja&&validniPotezi(igra,r,k).length>0)return true;return false;}
 
-function validniPotezi(igra,red,kol){
-  const figura=igra.ploca[red][kol];if(!figura)return[];
-  const boja=figura.boja,prot=boja==='b'?'c':'b';
-  return siroviPotezi(igra.ploca,red,kol,igra).filter(([tr,tk])=>{
-    if(figura.tip==='K'&&Math.abs(tk-kol)===2){
-      const p=tk===6?[5,6]:[3,2];
-      return !jeNapadnuto(igra.ploca,red,kol,prot)&&!jeNapadnuto(igra.ploca,red,p[0],prot)&&!jeNapadnuto(igra.ploca,red,p[1],prot);
+function nadjiKralja(ploca, boja) {
+  for (let r=0;r<8;r++) for (let k=0;k<8;k++) if (ploca[r][k]?.tip==='K'&&ploca[r][k].boja===boja) return [r,k];
+  return null;
+}
+
+function jeUSahu(igra, boja) {
+  const pos = nadjiKralja(igra.ploca, boja); if (!pos) return false;
+  return jeNapadnuto(igra.ploca, pos[0], pos[1], boja==='b'?'c':'b');
+}
+
+function imaLegalnih(igra, boja) {
+  for (let r=0;r<8;r++) for (let k=0;k<8;k++) if (igra.ploca[r][k]?.boja===boja&&validniPotezi(igra,r,k).length>0) return true;
+  return false;
+}
+
+function validniPotezi(igra, red, kol) {
+  const figura = igra.ploca[red][kol]; if (!figura) return [];
+  const boja=figura.boja, prot=boja==='b'?'c':'b';
+  return siroviPotezi(igra.ploca, red, kol, igra).filter(([tr,tk]) => {
+    if (figura.tip==='K'&&Math.abs(tk-kol)===2) {
+      const prolaz = tk===6?[5,6]:[3,2];
+      return !jeNapadnuto(igra.ploca,red,kol,prot)&&!jeNapadnuto(igra.ploca,red,prolaz[0],prot)&&!jeNapadnuto(igra.ploca,red,prolaz[1],prot);
     }
-    const sim=igra.ploca.map(r=>[...r]);sim[tr][tk]=sim[red][kol];sim[red][kol]=null;
-    if(figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1])sim[tr+(boja==='b'?1:-1)][tk]=null;
-    const[kr,kk]=nadjiKralja(sim,boja)||[];return kr!=null&&!jeNapadnuto(sim,kr,kk,prot);
+    const sim = igra.ploca.map(r=>[...r]); sim[tr][tk]=sim[red][kol]; sim[red][kol]=null;
+    if (figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1]) sim[tr+(boja==='b'?1:-1)][tk]=null;
+    const pos = nadjiKralja(sim, boja); return pos!=null&&!jeNapadnuto(sim,pos[0],pos[1],prot);
   });
 }
 
-function sPloca(p){return p.map(r=>r.map(f=>f?`${f.tip}${f.boja}`:'0'));}
-function dPloca(d){return d.map(r=>r.map(p=>p==='0'?null:{tip:p[0],boja:p[1]}));}
+function sPloca(p) { return p.map(r=>r.map(f=>f?`${f.tip}${f.boja}`:'0')); }
+function dPloca(d) { return d.map(r=>r.map(p=>p==='0'?null:{tip:p[0],boja:p[1]})); }
 
-// ── Stanje ──────────────────────────────────────────────────
-let ja=null,igra=null,igra_id=null,odabrano=null,moguci=[],imaAktivniIzazov=false;
+// ═══════════════════════════════════════════════
+// STANJE APLIKACIJE
+// ═══════════════════════════════════════════════
+let ja = null;
+let igra = null;
+let igra_id = null;
+let odabrano = null;
+let moguci = [];
+// Drži reference na Firebase listenere da ih možemo ukloniti (off)
+let listenerIzazov = null;
+let listenerIgra = null;
+let listenerOnline = null;
+let listenerIzazovOdg = null;
 
-// ── DB helpers ───────────────────────────────────────────────
-const dbGet=async p=>{const s=await get(ref(db,p));return s.exists()?s.val():null;};
-const dbSet=(p,v)=>set(ref(db,p),v);
-const dbUpd=(p,v)=>update(ref(db,p),v);
-const dbDel=p=>remove(ref(db,p));
-const dbListen=(p,cb)=>onValue(ref(db,p),s=>cb(s.val()));
+// ═══════════════════════════════════════════════
+// DB HELPERS
+// ═══════════════════════════════════════════════
+const dbGet = async p => { const s=await get(ref(db,p)); return s.exists()?s.val():null; };
+const dbSet = (p,v) => set(ref(db,p),v);
+const dbUpd = (p,v) => update(ref(db,p),v);
+const dbDel = p => remove(ref(db,p));
 
-// ── Init ─────────────────────────────────────────────────────
-async function init(){
-  if(!await dbGet('config'))await dbSet('config',{admin_loz:'admin123'});
-  if(!await dbGet('igraci'))await dbSet('igraci',{Francesco:true,Marta:true,Ivan:true,Ana:true,Luka:true});
+// Sigurno ukloni listener
+function ukloniListener(refObj) {
+  if (refObj) try { off(refObj); } catch(e) {}
+  return null;
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+async function init() {
+  const config = await dbGet('config');
+  if (!config) await dbSet('config', {admin_loz:'admin123'});
+  const igraci = await dbGet('igraci');
+  if (!igraci) await dbSet('igraci', {Francesco:true,Marta:true,Ivan:true,Ana:true,Luka:true});
 }
 init();
 
-// ── Prijava ──────────────────────────────────────────────────
-async function prijava(){
-  const ime=document.getElementById('unos-ime').value.trim();
-  const gr=document.getElementById('greska-prijave');
-  const gb=document.getElementById('gumb-prijava');
-  gr.textContent='';
-  if(!ime){gr.textContent='Unesite kodno ime.';return;}
-  gb.innerHTML='<span class="loader"></span>Provjera...';gb.disabled=true;
-  const igraci=await dbGet('igraci');
-  const kljuc=Object.keys(igraci||{}).find(k=>k.toLowerCase()===ime.toLowerCase());
-  if(!kljuc){gr.textContent='Kodno ime nije u bazi.';gb.innerHTML='Ulaz u klub ♟';gb.disabled=false;return;}
-  if(await dbGet(`online/${kljuc}`)){gr.textContent='Igrač je već prijavljen.';gb.innerHTML='Ulaz u klub ♟';gb.disabled=false;return;}
-  ja=kljuc;
-  const onRef=ref(db,`online/${ja}`);
-  await set(onRef,{ime:ja,ts:Date.now()});
-  onDisconnect(onRef).remove();
-  document.getElementById('header-ime').textContent=ja;
-  document.getElementById('ekran-prijava').classList.remove('aktivan');
-  document.getElementById('ekran-glavni').classList.add('aktivan');
-  gb.innerHTML='Ulaz u klub ♟';gb.disabled=false;
-  pokrenuiListenere();
-  azurirajStatistike();azurirajPovijest('sve');
-}
-window._prijava=prijava;
+// ═══════════════════════════════════════════════
+// PRIJAVA / ODJAVA
+// ═══════════════════════════════════════════════
+async function prijava() {
+  const ime = document.getElementById('unos-ime').value.trim();
+  const gr = document.getElementById('greska-prijave');
+  const gb = document.getElementById('gumb-prijava');
+  gr.textContent = '';
+  if (!ime) { gr.textContent='Unesite kodno ime.'; return; }
+  gb.innerHTML = '<span class="loader"></span>Provjera...'; gb.disabled = true;
 
-async function odjava(){
-  if(igra_id){if(!confirm('Aktivna igra prekida se. Sigurno?'))return;await dbUpd(`igre/${igra_id}`,{status:'prekinuta',prekinuo:ja});await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});}
-  await dbDel(`online/${ja}`);await dbDel(`izazovi/${ja}`);
-  ja=null;igra=null;igra_id=null;odabrano=null;moguci=[];imaAktivniIzazov=false;
-  document.getElementById('ekran-glavni').classList.remove('aktivan');
-  document.getElementById('ekran-prijava').classList.add('aktivan');
-  document.getElementById('unos-ime').value='';
-  document.getElementById('prikaz-igre').style.display='none';
-  document.getElementById('prikaz-cekanja').style.display='flex';
-}
-window._odjava=odjava;
+  try {
+    const igraci = await dbGet('igraci');
+    const kljuc = Object.keys(igraci||{}).find(k => k.toLowerCase()===ime.toLowerCase());
+    if (!kljuc) { gr.textContent='Kodno ime nije u bazi.'; return; }
+    if (await dbGet(`online/${kljuc}`)) { gr.textContent='Igrač je već prijavljen.'; return; }
 
-// ── Listeneri ────────────────────────────────────────────────
-function pokrenuiListenere(){
-  dbListen('online',data=>{renderOnline(data||{});});
-  dbListen(`izazovi/${ja}`,data=>{
-    if(data&&!igra_id){
-      prikaziIzazov(data);
-    } else if(!igra_id){
-      // Nema izazova - očisti i prikaži gumbe
-      imaAktivniIzazov=false;
-      document.getElementById('izazov-prikaz').innerHTML='';
-      document.getElementById('mob-izazov-prikaz').innerHTML='';
+    ja = kljuc;
+    const onRef = ref(db, `online/${ja}`);
+    await set(onRef, {ime:ja, ts:Date.now()});
+    onDisconnect(onRef).remove();
+    // Cleanup izazov i odgovor pri disconnect
+    onDisconnect(ref(db,`izazovi/${ja}`)).remove();
+
+    document.getElementById('header-ime').textContent = ja;
+    prikaziEkran('glavni');
+    pokrenuiListenere();
+    azurirajStatistike();
+    azurirajPovijest('sve');
+  } catch(e) {
+    gr.textContent = 'Greška pri prijavi: ' + e.message;
+  } finally {
+    gb.innerHTML = 'Ulaz u klub ♟'; gb.disabled = false;
+  }
+}
+window.prijava = prijava;
+
+async function odjava() {
+  if (igra_id && !confirm('Aktivna igra prekida se. Sigurno?')) return;
+  try {
+    if (igra_id) {
+      await dbUpd(`igre/${igra_id}`, {status:'prekinuta', prekinuo:ja});
+      await dbUpd(`online/${igra?.bijeliIme}`, {igra_id:null});
+      await dbUpd(`online/${igra?.crniIme}`, {igra_id:null});
+    }
+    await dbDel(`online/${ja}`);
+    await dbDel(`izazovi/${ja}`);
+    await dbDel(`izazovi_odg/${ja}`);
+  } catch(e) { console.warn('Greška pri odjavi:', e); }
+  resetStanje();
+  prikaziEkran('prijava');
+  document.getElementById('unos-ime').value = '';
+}
+window.odjava = odjava;
+
+function resetStanje() {
+  // Ukloni sve listenere
+  if (listenerOnline) { off(listenerOnline); listenerOnline=null; }
+  if (listenerIzazov) { off(listenerIzazov); listenerIzazov=null; }
+  if (listenerIgra)   { off(listenerIgra);   listenerIgra=null; }
+  if (listenerIzazovOdg) { off(listenerIzazovOdg); listenerIzazovOdg=null; }
+  ja=null; igra=null; igra_id=null; odabrano=null; moguci=[];
+}
+
+function prikaziEkran(koji) {
+  ['prijava','admin','glavni'].forEach(e => {
+    document.getElementById(`ekran-${e}`).classList.toggle('aktivan', e===koji);
+  });
+  if (koji==='glavni') {
+    document.getElementById('prikaz-cekanja').style.display='flex';
+    document.getElementById('prikaz-igre').style.display='none';
+    document.getElementById('mob-prikaz-cekanja').style.display='flex';
+    document.getElementById('mob-prikaz-igre').style.display='none';
+    document.getElementById('izazov-prikaz').innerHTML='';
+    document.getElementById('mob-izazov-prikaz').innerHTML='';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// FIREBASE LISTENERI
+// ═══════════════════════════════════════════════
+function pokrenuiListenere() {
+  // 1. Online igrači - globalni listener
+  listenerOnline = ref(db, 'online');
+  onValue(listenerOnline, snap => renderOnline(snap.val()||{}));
+
+  // 2. Moji izazovi - sluša samo moj node
+  listenerIzazov = ref(db, `izazovi/${ja}`);
+  onValue(listenerIzazov, snap => {
+    const data = snap.val();
+    if (data && !igra_id) {
+      prikaziIzazovKartica(data);
+    } else if (!igra_id) {
+      // Nema izazova - pokazi gumbe za izazivanje
+      prikaziGumbeZaIzazivanje();
     }
   });
 }
 
-function renderOnline(online){
-  const lista=document.getElementById('lista-online');
-  const cek=document.getElementById('lista-cekaonica');
-  const slobodni=[];
-  const igraci=Object.keys(online);
-  if(!igraci.length){
-    const prazan='<div class="nema-igraca">Nema online igrača</div>';
-    lista.innerHTML=prazan;
-    document.getElementById('mob-lista-online').innerHTML=prazan;
-    cek.innerHTML='';document.getElementById('mob-lista-cekaonica').innerHTML='';
-    if(!igra_id)renderGumbeCekanja([]);return;
-  }
-  const kartica=igraci.map(ime=>{
-    const uI=online[ime]?.igra_id;
-    if(!uI&&ime!==ja)slobodni.push(ime);
-    return`<div class="igrac-kartica ${uI?'igra':'ceka'}"><div class="igrac-ime">${ime}${ime===ja?' (ti)':''}</div><div class="igrac-status ${uI?'igra':'ceka'}">${uI?'⚔ U igri':'⏳ Čeka'}</div></div>`;
-  }).join('');
-  lista.innerHTML=kartica;
-  document.getElementById('mob-lista-online').innerHTML=kartica;
-  const cekHtml=slobodni.length?slobodni.map((n,i)=>`<div class="igrac-kartica ceka"><div class="igrac-ime">${n}</div><div class="igrac-status ceka">#${i+1} u redu</div></div>`).join(''):'<div class="nema-igraca" style="font-size:.8rem">Nema slobodnih</div>';
-  cek.innerHTML=cekHtml;
-  document.getElementById('mob-lista-cekaonica').innerHTML=cekHtml;
-  if(!igra_id)renderGumbeCekanja(slobodni);
+// ═══════════════════════════════════════════════
+// RENDER ONLINE IGRAČA
+// ═══════════════════════════════════════════════
+function renderOnline(online) {
+  const slobodni = [];
+  const igraci = Object.keys(online);
+
+  const karticaHtml = igraci.map(ime => {
+    const uIgri = !!online[ime]?.igra_id;
+    if (!uIgri && ime !== ja) slobodni.push(ime);
+    return `<div class="igrac-kartica ${uIgri?'igra':'ceka'}">
+      <div class="igrac-ime">${ime}${ime===ja?' (ti)':''}</div>
+      <div class="igrac-status ${uIgri?'igra':'ceka'}">${uIgri?'⚔ U igri':'⏳ Čeka'}</div>
+    </div>`;
+  }).join('') || '<div class="nema-igraca">Nema online igrača</div>';
+
+  const cekHtml = slobodni.length
+    ? slobodni.map((n,i) => `<div class="igrac-kartica ceka"><div class="igrac-ime">${n}</div><div class="igrac-status ceka">#${i+1} u redu</div></div>`).join('')
+    : '<div class="nema-igraca" style="font-size:.8rem">Nema slobodnih</div>';
+
+  el('lista-online').innerHTML = karticaHtml;
+  el('mob-lista-online').innerHTML = karticaHtml;
+  el('lista-cekaonica').innerHTML = cekHtml;
+  el('mob-lista-cekaonica').innerHTML = cekHtml;
+
+  // Ažuriraj gumbe samo ako nema aktivnog izazova ili igre
+  if (!igra_id) prikaziGumbeZaIzazivanje(slobodni);
 }
 
-function renderGumbeCekanja(slobodni){
-  // Ne dirај UI ako je izazov aktivan ili u igri
-  if(imaAktivniIzazov||igra_id)return;
-  const ip=document.getElementById('izazov-prikaz');
-  const mip=document.getElementById('mob-izazov-prikaz');
-  document.getElementById('tekst-dobrodosli').textContent=`Dobrodošli, ${ja}!`;
-  document.getElementById('mob-tekst-dobrodosli').textContent=`Dobrodošli, ${ja}!`;
-  if(slobodni.length){
-    document.getElementById('podtekst-dobrodosli').textContent='Izazovite igrača:';
-    document.getElementById('mob-podtekst-dobrodosli').textContent='Izazovite igrača:';
-    const gumbi=`<div style="display:flex;flex-wrap:wrap;justify-content:center">${slobodni.map(n=>`<button class="gumb gumb-primarni" style="width:auto;padding:12px 20px;margin:4px;font-size:1rem" onclick="posaljiIzazov('${n}')">⚔ Izazovi ${n}</button>`).join('')}</div>`;
-    ip.innerHTML=gumbi;mip.innerHTML=gumbi;
-  }else{
-    document.getElementById('podtekst-dobrodosli').textContent='Čekanje na protivnika...';
-    document.getElementById('mob-podtekst-dobrodosli').textContent='Čekanje na protivnika...';
-    ip.innerHTML='';mip.innerHTML='';
+function prikaziGumbeZaIzazivanje(slobodni) {
+  // Ako je izazov kartica prikazana, ne diraj je
+  if (el('izazov-prikaz').querySelector('.izazov-kartica')) return;
+  // Ako čekamo odgovor, ne diraj
+  if (el('izazov-prikaz').querySelector('.puls')) return;
+
+  if (!slobodni || slobodni.length === 0) {
+    const tekst = 'Čekanje na protivnika...';
+    el('podtekst-dobrodosli').textContent = tekst;
+    el('mob-podtekst-dobrodosli').textContent = tekst;
+    el('izazov-prikaz').innerHTML = '';
+    el('mob-izazov-prikaz').innerHTML = '';
+    return;
   }
+
+  el('podtekst-dobrodosli').textContent = 'Izazovite igrača:';
+  el('mob-podtekst-dobrodosli').textContent = 'Izazovite igrača:';
+  const gumbi = `<div style="display:flex;flex-wrap:wrap;justify-content:center">
+    ${slobodni.map(n=>`<button class="gumb gumb-primarni" style="width:auto;padding:12px 20px;margin:4px" onclick="posaljiIzazov('${n}')">⚔ Izazovi ${n}</button>`).join('')}
+  </div>`;
+  el('izazov-prikaz').innerHTML = gumbi;
+  el('mob-izazov-prikaz').innerHTML = gumbi;
 }
 
-// ── Izazov ───────────────────────────────────────────────────
-async function posaljiIzazov(prot){
-  if(await dbGet(`izazovi/${prot}`)){alert(`${prot} već ima aktivan izazov.`);return;}
-  imaAktivniIzazov=true;
-  await dbSet(`izazovi/${prot}`,{od:ja,ts:Date.now()});
-  const cekHtml=`<p style="color:var(--text-zlatni);font-style:italic;margin-top:12px" class="puls">⏳ Čekanje na odgovor od ${prot}...</p>`;
-  document.getElementById('podtekst-dobrodosli').textContent=`Izazov poslan ${prot}u...`;
-  document.getElementById('mob-podtekst-dobrodosli').textContent=`Izazov poslan ${prot}u...`;
-  document.getElementById('izazov-prikaz').innerHTML=cekHtml;
-  document.getElementById('mob-izazov-prikaz').innerHTML=cekHtml;
-  dbListen(`izazovi_odg/${ja}`,async val=>{
-    if(!val)return;
-    if(val.prihvacen&&val.igra_id){
-      imaAktivniIzazov=false;
-      await dbDel(`izazovi_odg/${ja}`);
+// ═══════════════════════════════════════════════
+// IZAZOV SUSTAV
+// ═══════════════════════════════════════════════
+async function posaljiIzazov(prot) {
+  // Provjeri je li protivnik slobodan
+  const protOnline = await dbGet(`online/${prot}`);
+  if (!protOnline) { alert(`${prot} nije online.`); return; }
+  if (protOnline.igra_id) { alert(`${prot} je već u igri.`); return; }
+  if (await dbGet(`izazovi/${prot}`)) { alert(`${prot} već ima aktivan izazov.`); return; }
+
+  // Postavi izazov u bazu
+  await dbSet(`izazovi/${prot}`, {od:ja, ts:Date.now()});
+
+  // Prikaži UI za čekanje
+  const cekHtml = `<p style="color:var(--text-zlatni);font-style:italic;margin-top:12px" class="puls">⏳ Čekanje na odgovor od ${prot}...</p>
+    <button class="gumb-malen opasnost" style="margin-top:12px" onclick="odustaniOdIzazova('${prot}')">Odustani</button>`;
+  el('podtekst-dobrodosli').textContent = `Izazov poslan ${prot}u...`;
+  el('mob-podtekst-dobrodosli').textContent = `Izazov poslan ${prot}u...`;
+  el('izazov-prikaz').innerHTML = cekHtml;
+  el('mob-izazov-prikaz').innerHTML = cekHtml;
+
+  // Slušaj odgovor
+  listenerIzazovOdg = ref(db, `izazovi_odg/${ja}`);
+  onValue(listenerIzazovOdg, async snap => {
+    const val = snap.val();
+    if (!val) return; // null = još nema odgovora
+
+    // Ukloni listener odmah da ne okida više puta
+    off(listenerIzazovOdg); listenerIzazovOdg = null;
+    await dbDel(`izazovi_odg/${ja}`);
+
+    if (val.prihvacen && val.igra_id) {
       spojiBezIgru(val.igra_id);
-    } else if(val.prihvacen===false){
-      imaAktivniIzazov=false;
-      await dbDel(`izazovi_odg/${ja}`);
-      document.getElementById('podtekst-dobrodosli').textContent=`${prot} je odbio izazov.`;
-      document.getElementById('mob-podtekst-dobrodosli').textContent=`${prot} je odbio izazov.`;
-      document.getElementById('izazov-prikaz').innerHTML='';
-      document.getElementById('mob-izazov-prikaz').innerHTML='';
+    } else {
+      el('podtekst-dobrodosli').textContent = `${prot} je odbio izazov.`;
+      el('mob-podtekst-dobrodosli').textContent = `${prot} je odbio izazov.`;
+      el('izazov-prikaz').innerHTML = '';
+      el('mob-izazov-prikaz').innerHTML = '';
     }
   });
 }
-window._posaljiIzazov=posaljiIzazov;
+window.posaljiIzazov = posaljiIzazov;
 
-function prikaziIzazov(data){
-  imaAktivniIzazov=true;
-  const html=`<div class="izazov-kartica">
+async function odustaniOdIzazova(prot) {
+  if (listenerIzazovOdg) { off(listenerIzazovOdg); listenerIzazovOdg=null; }
+  await dbDel(`izazovi/${prot}`);
+  await dbDel(`izazovi_odg/${ja}`);
+  el('izazov-prikaz').innerHTML = '';
+  el('mob-izazov-prikaz').innerHTML = '';
+  el('podtekst-dobrodosli').textContent = 'Čekanje na protivnika...';
+  el('mob-podtekst-dobrodosli').textContent = 'Čekanje na protivnika...';
+}
+window.odustaniOdIzazova = odustaniOdIzazova;
+
+function prikaziIzazovKartica(data) {
+  const html = `<div class="izazov-kartica">
     <div class="izazov-naslov">⚔ Izazov od ${data.od}!</div>
-    <p style="color:rgba(245,230,200,.6);font-style:italic">${data.od} vas izaziva na partiju šaha</p>
+    <p style="color:rgba(245,230,200,.6);font-style:italic;margin-bottom:4px">${data.od} vas izaziva na partiju šaha</p>
     <div class="izazov-gumbi">
-      <button class="gumb gumb-primarni" onclick="prihvatiIzazov('${data.od}')">Prihvati</button>
-      <button class="gumb gumb-opasnost" onclick="odbijIzazov('${data.od}')">Odbij</button>
+      <button class="gumb gumb-primarni" onclick="prihvatiIzazov('${data.od}')">✓ Prihvati</button>
+      <button class="gumb gumb-opasnost" onclick="odbijIzazov('${data.od}')">✗ Odbij</button>
     </div>
   </div>`;
-  document.getElementById('izazov-prikaz').innerHTML=html;
-  document.getElementById('mob-izazov-prikaz').innerHTML=html;
-  // Automatski skoči na ploču tab na mobitelu
-  const tab=document.getElementById('tab-ploca');
-  if(tab&&window.innerWidth<=900)mobTab('ploca',tab);
+  el('izazov-prikaz').innerHTML = html;
+  el('mob-izazov-prikaz').innerHTML = html;
+  el('podtekst-dobrodosli').textContent = '';
+  el('mob-podtekst-dobrodosli').textContent = '';
+  // Na mobitelu skoči na ploču tab
+  const tab = el('tab-ploca');
+  if (tab && window.innerWidth <= 900) mobTab('ploca', tab);
 }
 
-async function prihvatiIzazov(od){
-  const bijeli=Math.random()>.5?ja:od,crni=bijeli===ja?od:ja;
-  const noviRef=push(ref(db,'igre'));
-  const id=noviRef.key;
-  await set(noviRef,{bijeli,crni,ploca:sPloca(novaPloca()),naPotezu:'b',rokada:{b:{kral:true,lijevi:true,desni:true},c:{kral:true,lijevi:true,desni:true}},enPassant:null,zadnjiPotez:null,potezi:[],status:'aktivna',ts:Date.now()});
-  await dbSet(`izazovi_odg/${od}`,{prihvacen:true,igra_id:id});
+async function prihvatiIzazov(od) {
+  const bijeli = Math.random()>.5 ? ja : od;
+  const crni = bijeli===ja ? od : ja;
+  const noviRef = push(ref(db,'igre'));
+  const id = noviRef.key;
+  await set(noviRef, {
+    bijeli, crni,
+    ploca: sPloca(novaPloca()),
+    naPotezu: 'b',
+    rokada: {b:{kral:true,lijevi:true,desni:true}, c:{kral:true,lijevi:true,desni:true}},
+    enPassant: null, zadnjiPotez: null, potezi: [],
+    status: 'aktivna', ts: Date.now()
+  });
+  // Postavi odgovor PRIJE nego brišemo izazov
+  await dbSet(`izazovi_odg/${od}`, {prihvacen:true, igra_id:id});
   await dbDel(`izazovi/${ja}`);
-  await dbUpd(`online/${ja}`,{igra_id:id});await dbUpd(`online/${od}`,{igra_id:id});
+  await dbUpd(`online/${ja}`, {igra_id:id});
+  await dbUpd(`online/${od}`, {igra_id:id});
   spojiBezIgru(id);
 }
-window._prihvatiIzazov=prihvatiIzazov;
+window.prihvatiIzazov = prihvatiIzazov;
 
-async function odbijIzazov(od){
-  imaAktivniIzazov=false;
+async function odbijIzazov(od) {
   await dbDel(`izazovi/${ja}`);
-  await dbSet(`izazovi_odg/${od}`,{prihvacen:false});
-  document.getElementById('izazov-prikaz').innerHTML='';
-  document.getElementById('mob-izazov-prikaz').innerHTML='';
+  await dbSet(`izazovi_odg/${od}`, {prihvacen:false});
+  el('izazov-prikaz').innerHTML = '';
+  el('mob-izazov-prikaz').innerHTML = '';
 }
-window._odbijIzazov=odbijIzazov;
+window.odbijIzazov = odbijIzazov;
 
-// ── Spoji na igru ─────────────────────────────────────────────
-function isMobile(){return window.innerWidth<=900;}
+// ═══════════════════════════════════════════════
+// IGRA - SPAJANJE I LISTENER
+// ═══════════════════════════════════════════════
+function spojiBezIgru(id) {
+  igra_id = id;
+  el('prikaz-cekanja').style.display = 'none';
+  el('prikaz-igre').style.display = 'flex';
+  el('mob-prikaz-cekanja').style.display = 'none';
+  el('mob-prikaz-igre').style.display = 'flex';
+  el('izazov-prikaz').innerHTML = '';
+  el('mob-izazov-prikaz').innerHTML = '';
+  const tab = el('tab-ploca');
+  if (tab) mobTab('ploca', tab);
 
-function spojiBezIgru(id){
-  igra_id=id;
-  document.getElementById('prikaz-cekanja').style.display='none';
-  document.getElementById('prikaz-igre').style.display='flex';
-  document.getElementById('mob-prikaz-cekanja').style.display='none';
-  document.getElementById('mob-prikaz-igre').style.display='flex';
-  // Skoči na ploču tab
-  const tab=document.getElementById('tab-ploca');
-  if(tab)mobTab('ploca',tab);
-  dbListen(`igre/${id}`,data=>{
-    if(!data)return;
-    igra={ploca:dPloca(data.ploca),naPotezu:data.naPotezu,bijeliIme:data.bijeli,crniIme:data.crni,rokada:data.rokada||{b:{kral:true,lijevi:true,desni:true},c:{kral:true,lijevi:true,desni:true}},enPassant:data.enPassant||null,zadnjiPotez:data.zadnjiPotez||null,potezi:data.potezi||[]};
-    odabrano=null;moguci=[];
-    renderPloca();azurirajInfoIgre();azurirajNotaciju();
-    if(data.status==='zavrsen'){prikaziKrajModal(data.kraj_razlog,data.kraj_pobjednik,data.kraj_gubitnik);}
-    else if(data.status==='prekinuta'){document.getElementById('kraj-ikona').textContent='⚑';document.getElementById('kraj-naslov').textContent='Igra prekinuta';document.getElementById('kraj-msg').textContent=(data.prekinuo||'Protivnik')+' je napustio igru.';document.getElementById('modal-kraj').classList.add('aktivan');}
-    else if(data.status==='remi_ponuda'&&data.remi_ponudac!==ja){document.getElementById('remi-msg').textContent=`${data.remi_ponudac} nudi remi. Prihvaćate?`;document.getElementById('modal-remi').classList.add('aktivan');}
-    else if(data.status==='aktivna'){const np=data.naPotezu==='b'?data.bijeli:data.crni;setStatus(np===ja?'⟶ Vaš je potez!':np+' je na potezu');}
+  // Ukloni stari listener igre ako postoji
+  if (listenerIgra) { off(listenerIgra); listenerIgra=null; }
+
+  listenerIgra = ref(db, `igre/${id}`);
+  onValue(listenerIgra, snap => {
+    const data = snap.val(); if (!data) return;
+    igra = {
+      ploca: dPloca(data.ploca),
+      naPotezu: data.naPotezu,
+      bijeliIme: data.bijeli,
+      crniIme: data.crni,
+      rokada: data.rokada || {b:{kral:true,lijevi:true,desni:true},c:{kral:true,lijevi:true,desni:true}},
+      enPassant: data.enPassant || null,
+      zadnjiPotez: data.zadnjiPotez || null,
+      potezi: data.potezi || []
+    };
+    odabrano=null; moguci=[];
+    renderPloca(); azurirajInfoIgre(); azurirajNotaciju();
+
+    if (data.status==='zavrsen') {
+      prikaziKrajModal(data.kraj_razlog, data.kraj_pobjednik, data.kraj_gubitnik);
+    } else if (data.status==='prekinuta') {
+      el('kraj-ikona').textContent='⚑';
+      el('kraj-naslov').textContent='Igra prekinuta';
+      el('kraj-msg').textContent=(data.prekinuo||'Protivnik')+' je napustio igru.';
+      el('modal-kraj').classList.add('aktivan');
+    } else if (data.status==='remi_ponuda' && data.remi_ponudac!==ja) {
+      el('remi-msg').textContent=`${data.remi_ponudac} nudi remi. Prihvaćate?`;
+      el('modal-remi').classList.add('aktivan');
+    } else if (data.status==='aktivna') {
+      const np = data.naPotezu==='b'?data.bijeli:data.crni;
+      setStatus(np===ja ? '⟶ Vaš je potez!' : `${np} je na potezu`);
+    }
   });
 }
 
-// ── Render ploče ─────────────────────────────────────────────
-function renderPlocaEl(ploEl,kdEl,klEl,velPx){
-  if(!igra)return;
-  ploEl.innerHTML='';
-  const ori=igra.bijeliIme===ja?'b':'c';
-  const redovi=ori==='b'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
-  const kolone=ori==='b'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
-  redovi.forEach(r=>kolone.forEach(k=>{
-    const div=document.createElement('div');
-    div.className='polje '+((r+k)%2===0?'bijelo':'crno');
-    if(velPx){div.style.width=velPx+'px';div.style.height=velPx+'px';div.style.fontSize=(velPx*0.62)+'px';}
-    if(igra.zadnjiPotez){const[or,ok,tr,tk]=igra.zadnjiPotez;if((r===or&&k===ok)||(r===tr&&k===tk))div.classList.add('zadnji-potez');}
-    if(odabrano&&odabrano[0]===r&&odabrano[1]===k)div.classList.add('odabrano');
-    if(moguci.some(p=>p[0]===r&&p[1]===k)){igra.ploca[r][k]?div.classList.add('moguc-hvatanje'):div.classList.add('moguc-potez');}
-    if(igra.ploca[r][k]?.tip==='K'&&jeUSahu(igra,igra.ploca[r][k].boja))div.classList.add('sah');
-    const fig=igra.ploca[r][k];
-    if(fig){const s=document.createElement('span');s.className='figura-anim';s.textContent=FIG[fig.tip][fig.boja];div.appendChild(s);}
-    div.addEventListener('click',()=>klikPolje(r,k));
+// ═══════════════════════════════════════════════
+// RENDER PLOČE
+// ═══════════════════════════════════════════════
+function getMobVel() {
+  return Math.floor(Math.min(window.innerWidth-52, 380)/8);
+}
+
+function renderPlocaEl(ploEl, kdEl, klEl, vel) {
+  if (!igra || !ploEl) return;
+  ploEl.innerHTML = '';
+  const ori = igra.bijeliIme===ja?'b':'c';
+  const redovi = ori==='b'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
+  const kolone = ori==='b'?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
+
+  redovi.forEach(r => kolone.forEach(k => {
+    const div = document.createElement('div');
+    div.className = 'polje '+((r+k)%2===0?'bijelo':'crno');
+    if (vel) { div.style.width=vel+'px'; div.style.height=vel+'px'; div.style.fontSize=(vel*0.62)+'px'; }
+    if (igra.zadnjiPotez) {
+      const [or,ok,tr,tk] = igra.zadnjiPotez;
+      if ((r===or&&k===ok)||(r===tr&&k===tk)) div.classList.add('zadnji-potez');
+    }
+    if (odabrano&&odabrano[0]===r&&odabrano[1]===k) div.classList.add('odabrano');
+    if (moguci.some(p=>p[0]===r&&p[1]===k)) {
+      igra.ploca[r][k] ? div.classList.add('moguc-hvatanje') : div.classList.add('moguc-potez');
+    }
+    if (igra.ploca[r][k]?.tip==='K' && jeUSahu(igra,igra.ploca[r][k].boja)) div.classList.add('sah');
+    const fig = igra.ploca[r][k];
+    if (fig) { const s=document.createElement('span'); s.textContent=FIG[fig.tip][fig.boja]; div.appendChild(s); }
+    div.addEventListener('click', ()=>klikPolje(r,k));
     ploEl.appendChild(div);
   }));
-  const sl=ori==='b'?'abcdefgh':'hgfedcba';
-  const br=ori==='b'?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8];
-  const w=velPx||60;
-  if(kdEl)kdEl.innerHTML=sl.split('').map(s=>`<span style="width:${w}px;text-align:center;font-size:.7rem;color:rgba(245,230,200,.4)">${s}</span>`).join('');
-  if(klEl)klEl.innerHTML=br.map(n=>`<span style="height:${w}px;display:flex;align-items:center;font-size:.7rem;color:rgba(245,230,200,.4);width:16px;justify-content:flex-end;padding-right:4px">${n}</span>`).join('');
+
+  const sl = ori==='b'?'abcdefgh':'hgfedcba';
+  const br = ori==='b'?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8];
+  const w = vel||60;
+  if (kdEl) kdEl.innerHTML = sl.split('').map(s=>`<span style="width:${w}px;text-align:center;font-size:.7rem;color:rgba(245,230,200,.4)">${s}</span>`).join('');
+  if (klEl) klEl.innerHTML = br.map(n=>`<span style="height:${w}px;display:flex;align-items:center;font-size:.7rem;color:rgba(245,230,200,.4);width:16px;justify-content:flex-end;padding-right:4px">${n}</span>`).join('');
 }
 
-function getMobVel(){
-  const w=window.innerWidth;
-  // Ploča + koordinate + padding mora stati u širinu ekrana
-  // 8 polja + ~20px koordinate + ~16px padding sa strana
-  const dostupno=Math.min(w-52,380);
-  return Math.floor(dostupno/8);
+function renderPloca() {
+  renderPlocaEl(el('ploca'), el('kord-dolje'), el('kord-lijevo'), 60);
+  renderPlocaEl(el('mob-ploca-el'), el('mob-kord-dolje'), el('mob-kord-lijevo'), getMobVel());
 }
 
-function renderPloca(){
-  if(!igra)return;
-  // Desktop
-  renderPlocaEl(
-    document.getElementById('ploca'),
-    document.getElementById('kord-dolje'),
-    document.getElementById('kord-lijevo'),
-    60
-  );
-  // Mobile
-  const mobEl=document.getElementById('mob-ploca-el');
-  if(mobEl){
-    const vel=getMobVel();
-    renderPlocaEl(mobEl,document.getElementById('mob-kord-dolje'),document.getElementById('mob-kord-lijevo'),vel);
+function azurirajInfoIgre() {
+  if (!igra) return;
+  const moja = igra.bijeliIme===ja?'b':'c';
+  const gornjBoja = moja==='b'?'c':'b';
+  const gornjIme = moja==='b'?igra.crniIme:igra.bijeliIme;
+  const np = igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
+  const jeMoj = np===ja;
+  const potezHtml = `<span class="${jeMoj?'na-potezu':'ceka-potez'}">${jeMoj?'⟶ Vaš potez!':'Potez: '+np}</span>`;
+  const setBoth = (id,val,html=false) => { if(el(id)) html?el(id).innerHTML=val:el(id).textContent=val; if(el('mob-'+id)) html?el('mob-'+id).innerHTML=val:el('mob-'+id).textContent=val; };
+  setBoth('gornji-figura', FIG['K'][gornjBoja]);
+  setBoth('gornji-ime', gornjIme);
+  setBoth('gornji-boja', gornjBoja==='b'?'Bijele figure':'Crne figure');
+  setBoth('donji-figura', FIG['K'][moja]);
+  setBoth('donji-ime', ja);
+  setBoth('donji-boja', moja==='b'?'Bijele figure':'Crne figure');
+  setBoth('potez-ind', potezHtml, true);
+}
+
+function azurirajNotaciju() {
+  if (!igra) return;
+  const html = igra.potezi.map((p,i) => {
+    const br = i%2===0?`<span style="color:rgba(245,230,200,.25);margin-right:2px">${Math.floor(i/2)+1}.</span>`:'';
+    return `${br}<span class="notacija-potez">${p}</span>`;
+  }).join('');
+  [el('notacija'), el('mob-notacija')].forEach(e => { if(e){e.innerHTML=html;e.scrollTop=e.scrollHeight;} });
+}
+
+function setStatus(m) {
+  [el('status-msg'), el('mob-status-msg')].forEach(e => { if(e) e.textContent=m; });
+}
+
+// ═══════════════════════════════════════════════
+// POTEZI
+// ═══════════════════════════════════════════════
+function klikPolje(red, kol) {
+  if (!igra||!igra_id) return;
+  const np = igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
+  if (np!==ja) { setStatus('Nije vaš potez!'); return; }
+  const fig = igra.ploca[red][kol];
+  if (odabrano) {
+    const [or,ok] = odabrano;
+    if (moguci.some(p=>p[0]===red&&p[1]===kol)) { izvrsiPotez(or,ok,red,kol); odabrano=null; moguci=[]; return; }
+    if (fig?.boja===igra.naPotezu) { odabrano=[red,kol]; moguci=validniPotezi(igra,red,kol); renderPloca(); return; }
+    odabrano=null; moguci=[]; renderPloca(); return;
   }
+  if (fig?.boja===igra.naPotezu) { odabrano=[red,kol]; moguci=validniPotezi(igra,red,kol); renderPloca(); }
 }
 
-function azurirajInfoIgre(){
-  if(!igra)return;
-  const moja=igra.bijeliIme===ja?'b':'c',gb=moja==='b'?'c':'b';
-  const gornjIme=moja==='b'?igra.crniIme:igra.bijeliIme;
-  const gornjBoja=gb==='b'?'Bijele figure':'Crne figure';
-  const donjBoja=moja==='b'?'Bijele figure':'Crne figure';
-  const np=igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
-  const jeMoj=np===ja;
-  const potezHtml=`<span class="${jeMoj?'na-potezu':'ceka-potez'}">${jeMoj?'⟶ Vaš potez!':'Potez: '+np}</span>`;
-  // Desktop
-  document.getElementById('gornji-figura').textContent=FIG['K'][gb];
-  document.getElementById('gornji-ime').textContent=gornjIme;
-  document.getElementById('gornji-boja').textContent=gornjBoja;
-  document.getElementById('donji-figura').textContent=FIG['K'][moja];
-  document.getElementById('donji-ime').textContent=ja;
-  document.getElementById('donji-boja').textContent=donjBoja;
-  document.getElementById('potez-ind').innerHTML=potezHtml;
-  // Mobile
-  document.getElementById('mob-gornji-figura').textContent=FIG['K'][gb];
-  document.getElementById('mob-gornji-ime').textContent=gornjIme;
-  document.getElementById('mob-gornji-boja').textContent=gornjBoja;
-  document.getElementById('mob-donji-figura').textContent=FIG['K'][moja];
-  document.getElementById('mob-donji-ime').textContent=ja;
-  document.getElementById('mob-donji-boja').textContent=donjBoja;
-  document.getElementById('mob-potez-ind').innerHTML=potezHtml;
-}
+async function izvrsiPotez(or, ok, tr, tk) {
+  const figura = igra.ploca[or][ok];
+  const hvat = !!(igra.ploca[tr][tk]) || (figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1]);
 
-function azurirajNotaciju(){
-  if(!igra)return;
-  const html=igra.potezi.map((p,i)=>{const br=i%2===0?`<span style="color:rgba(245,230,200,.25);margin-right:2px">${Math.floor(i/2)+1}.</span>`:'';return`${br}<span class="notacija-potez">${p}</span>`;}).join('');
-  const el=document.getElementById('notacija');el.innerHTML=html;el.scrollTop=el.scrollHeight;
-  const em=document.getElementById('mob-notacija');if(em){em.innerHTML=html;em.scrollTop=em.scrollHeight;}
-}
-function setStatus(m){const e=document.getElementById('status-msg');if(e)e.textContent=m;const em=document.getElementById('mob-status-msg');if(em)em.textContent=m;}
-
-// ── Klik polje ───────────────────────────────────────────────
-function klikPolje(red,kol){
-  if(!igra||!igra_id)return;
-  const np=igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
-  if(np!==ja){setStatus('Nije vaš potez!');return;}
-  const fig=igra.ploca[red][kol];
-  if(odabrano){
-    const[or,ok]=odabrano;
-    if(moguci.some(p=>p[0]===red&&p[1]===kol)){izvrsiPotez(or,ok,red,kol);odabrano=null;moguci=[];return;}
-    if(fig?.boja===igra.naPotezu){odabrano=[red,kol];moguci=validniPotezi(igra,red,kol);renderPloca();return;}
-    odabrano=null;moguci=[];renderPloca();return;
+  // Rokada - pomakni top
+  if (figura.tip==='K'&&Math.abs(tk-ok)===2) {
+    const kr = figura.boja==='b'?7:0;
+    if (tk===6) { igra.ploca[kr][5]=igra.ploca[kr][7]; igra.ploca[kr][7]=null; }
+    else        { igra.ploca[kr][3]=igra.ploca[kr][0]; igra.ploca[kr][0]=null; }
   }
-  if(fig?.boja===igra.naPotezu){odabrano=[red,kol];moguci=validniPotezi(igra,red,kol);renderPloca();}
-}
+  // En passant hvatanje
+  if (figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1])
+    igra.ploca[tr+(figura.boja==='b'?1:-1)][tk] = null;
 
-// ── Izvrši potez ─────────────────────────────────────────────
-async function izvrsiPotez(or,ok,tr,tk){
-  const figura=igra.ploca[or][ok];
-  const hvat=!!(igra.ploca[tr][tk])||(figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1]);
-  if(figura.tip==='K'&&Math.abs(tk-ok)===2){const kr=figura.boja==='b'?7:0;if(tk===6){igra.ploca[kr][5]=igra.ploca[kr][7];igra.ploca[kr][7]=null;}else{igra.ploca[kr][3]=igra.ploca[kr][0];igra.ploca[kr][0]=null;}}
-  if(figura.tip==='P'&&igra.enPassant&&tr===igra.enPassant[0]&&tk===igra.enPassant[1])igra.ploca[tr+(figura.boja==='b'?1:-1)][tk]=null;
-  if(figura.tip==='K')igra.rokada[figura.boja]={kral:false,lijevi:false,desni:false};
-  if(figura.tip==='R'){if(ok===0)igra.rokada[figura.boja].lijevi=false;if(ok===7)igra.rokada[figura.boja].desni=false;}
-  igra.enPassant=null;
-  if(figura.tip==='P'&&Math.abs(tr-or)===2)igra.enPassant=[(or+tr)/2,ok];
-  igra.ploca[tr][tk]=figura;igra.ploca[or][ok]=null;igra.zadnjiPotez=[or,ok,tr,tk];
-  const prot=figura.boja==='b'?'c':'b';
-  const privSah=jeUSahu(igra,prot),privMat=privSah&&!imaLegalnih(igra,prot);
-  const sn=privMat?'#':privSah?'+':'';
-  const sl='abcdefgh';
-  let not=figura.tip!=='P'?figura.tip:'';
-  if(figura.tip==='K'&&Math.abs(tk-ok)===2){not=tk===6?'O-O':'O-O-O';}
-  else{if(hvat)not+=(figura.tip==='P'?sl[ok]:'')+  'x';not+=sl[tk]+(8-tr)+sn;}
-  const noviPotezi=[...igra.potezi,not];
+  // Ažuriraj prava rokade
+  if (figura.tip==='K') igra.rokada[figura.boja] = {kral:false,lijevi:false,desni:false};
+  if (figura.tip==='R') { if(ok===0) igra.rokada[figura.boja].lijevi=false; if(ok===7) igra.rokada[figura.boja].desni=false; }
 
-  if(figura.tip==='P'&&(tr===0||tr===7)){
-    await dbUpd(`igre/${igra_id}`,{ploca:sPloca(igra.ploca),rokada:igra.rokada,enPassant:igra.enPassant||null,zadnjiPotez:igra.zadnjiPotez,potezi:noviPotezi});
-    prikaziPromocijuModal(figura.boja,tr,tk);return;
+  // En passant mogućnost za sljedeći potez
+  igra.enPassant = (figura.tip==='P'&&Math.abs(tr-or)===2) ? [(or+tr)/2,ok] : null;
+
+  igra.ploca[tr][tk] = figura;
+  igra.ploca[or][ok] = null;
+  igra.zadnjiPotez = [or,ok,tr,tk];
+
+  // Algebarska notacija
+  const prot = figura.boja==='b'?'c':'b';
+  const privSah = jeUSahu(igra,prot);
+  const privMat = privSah&&!imaLegalnih(igra,prot);
+  const sn = privMat?'#':privSah?'+':'';
+  const sl = 'abcdefgh';
+  let not;
+  if (figura.tip==='K'&&Math.abs(tk-ok)===2) {
+    not = tk===6?'O-O':'O-O-O';
+  } else {
+    not = figura.tip!=='P'?figura.tip:'';
+    if (hvat) not += (figura.tip==='P'?sl[ok]:'')+  'x';
+    not += sl[tk]+(8-tr)+sn;
+  }
+  const noviPotezi = [...igra.potezi, not];
+
+  // Promocija pješaka
+  if (figura.tip==='P'&&(tr===0||tr===7)) {
+    await dbUpd(`igre/${igra_id}`, {ploca:sPloca(igra.ploca), rokada:igra.rokada, enPassant:igra.enPassant, zadnjiPotez:igra.zadnjiPotez, potezi:noviPotezi});
+    prikaziPromocijuModal(figura.boja, tr, tk);
+    return;
   }
   await spremiPotez(noviPotezi);
 }
 
-async function spremiPotez(noviPotezi){
-  const novoNP=igra.naPotezu==='b'?'c':'b';
-  const upd={ploca:sPloca(igra.ploca),naPotezu:novoNP,rokada:igra.rokada,enPassant:igra.enPassant||null,zadnjiPotez:igra.zadnjiPotez,potezi:noviPotezi,status:'aktivna'};
-  const slj={...igra,naPotezu:novoNP};
-  if(!imaLegalnih(slj,novoNP)){
-    if(jeUSahu(slj,novoNP)){
-      upd.status='zavrsen';upd.kraj_razlog='mat';
-      upd.kraj_pobjednik=igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
-      upd.kraj_gubitnik=novoNP==='b'?igra.bijeliIme:igra.crniIme;
-      await spremiRezultat(igra.bijeliIme,igra.crniIme,igra.naPotezu==='b'?'b_pobijedio':'c_pobijedio');
-    }else{upd.status='zavrsen';upd.kraj_razlog='pat';await spremiRezultat(igra.bijeliIme,igra.crniIme,'remi');}
-    await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});
+async function spremiPotez(noviPotezi) {
+  const novoNP = igra.naPotezu==='b'?'c':'b';
+  const upd = {ploca:sPloca(igra.ploca), naPotezu:novoNP, rokada:igra.rokada, enPassant:igra.enPassant||null, zadnjiPotez:igra.zadnjiPotez, potezi:noviPotezi, status:'aktivna'};
+  const slj = {...igra, naPotezu:novoNP};
+  if (!imaLegalnih(slj,novoNP)) {
+    if (jeUSahu(slj,novoNP)) {
+      upd.status='zavrsen'; upd.kraj_razlog='mat';
+      upd.kraj_pobjednik = igra.naPotezu==='b'?igra.bijeliIme:igra.crniIme;
+      upd.kraj_gubitnik  = novoNP==='b'?igra.bijeliIme:igra.crniIme;
+      await spremiRezultat(igra.bijeliIme, igra.crniIme, igra.naPotezu==='b'?'b_pobijedio':'c_pobijedio');
+    } else {
+      upd.status='zavrsen'; upd.kraj_razlog='pat';
+      await spremiRezultat(igra.bijeliIme, igra.crniIme, 'remi');
+    }
+    await dbUpd(`online/${igra.bijeliIme}`, {igra_id:null});
+    await dbUpd(`online/${igra.crniIme}`,  {igra_id:null});
   }
-  await dbUpd(`igre/${igra_id}`,upd);
+  await dbUpd(`igre/${igra_id}`, upd);
 }
 
-function prikaziPromocijuModal(boja,tr,tk){
-  const c=document.getElementById('promo-figure');c.innerHTML='';
-  ['Q','R','B','N'].forEach(tip=>{const b=document.createElement('div');b.className='promo-figura';b.textContent=FIG[tip][boja];b.title={Q:'Kraljica',R:'Top',B:'Lovac',N:'Konj'}[tip];b.onclick=()=>promoviraj(tip,boja,tr,tk);c.appendChild(b);});
-  document.getElementById('modal-promocija').classList.add('aktivan');
+function prikaziPromocijuModal(boja, tr, tk) {
+  const c = el('promo-figure'); c.innerHTML='';
+  ['Q','R','B','N'].forEach(tip => {
+    const b = document.createElement('div');
+    b.className='promo-figura'; b.textContent=FIG[tip][boja];
+    b.title={Q:'Kraljica',R:'Top',B:'Lovac',N:'Konj'}[tip];
+    b.onclick = () => promoviraj(tip,boja,tr,tk);
+    c.appendChild(b);
+  });
+  el('modal-promocija').classList.add('aktivan');
 }
 
-async function promoviraj(tip,boja,tr,tk){
-  igra.ploca[tr][tk].tip=tip;
-  document.getElementById('modal-promocija').classList.remove('aktivan');
+async function promoviraj(tip, boja, tr, tk) {
+  igra.ploca[tr][tk].tip = tip;
+  el('modal-promocija').classList.remove('aktivan');
   await spremiPotez(igra.potezi);
 }
-window._promoviraj=promoviraj;
+window.promoviraj = promoviraj;
 
-// ── Remi i predaja ───────────────────────────────────────────
-async function ponudiRemi(){if(!igra_id)return;await dbUpd(`igre/${igra_id}`,{status:'remi_ponuda',remi_ponudac:ja});}
-window._ponudiRemi=ponudiRemi;
-
-async function prihvatiRemi(){
-  document.getElementById('modal-remi').classList.remove('aktivan');
-  await spremiRezultat(igra.bijeliIme,igra.crniIme,'remi');
-  await dbUpd(`igre/${igra_id}`,{status:'zavrsen',kraj_razlog:'remi',kraj_pobjednik:null,kraj_gubitnik:null});
-  await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});
+// ═══════════════════════════════════════════════
+// REMI I PREDAJA
+// ═══════════════════════════════════════════════
+async function ponudiRemi() {
+  if (!igra_id) return;
+  await dbUpd(`igre/${igra_id}`, {status:'remi_ponuda', remi_ponudac:ja});
 }
-window._prihvatiRemi=prihvatiRemi;
+window.ponudiRemi = ponudiRemi;
 
-async function odbijRemi(){
-  document.getElementById('modal-remi').classList.remove('aktivan');
-  await dbUpd(`igre/${igra_id}`,{status:'aktivna',remi_ponudac:null});
+async function prihvatiRemi() {
+  el('modal-remi').classList.remove('aktivan');
+  await spremiRezultat(igra.bijeliIme, igra.crniIme, 'remi');
+  await dbUpd(`igre/${igra_id}`, {status:'zavrsen', kraj_razlog:'remi', kraj_pobjednik:null, kraj_gubitnik:null});
+  await dbUpd(`online/${igra.bijeliIme}`, {igra_id:null});
+  await dbUpd(`online/${igra.crniIme}`,  {igra_id:null});
 }
-window._odbijRemi=odbijRemi;
+window.prihvatiRemi = prihvatiRemi;
 
-async function predaj(){
-  if(!igra_id||!igra)return;
-  if(!confirm('Sigurno želite predati?'))return;
-  const pob=igra.bijeliIme===ja?igra.crniIme:igra.bijeliIme;
-  await spremiRezultat(igra.bijeliIme,igra.crniIme,ja===igra.bijeliIme?'c_pobijedio':'b_pobijedio');
-  await dbUpd(`igre/${igra_id}`,{status:'zavrsen',kraj_razlog:'predaja',kraj_pobjednik:pob,kraj_gubitnik:ja});
-  await dbUpd(`online/${igra.bijeliIme}`,{igra_id:null});await dbUpd(`online/${igra.crniIme}`,{igra_id:null});
+async function odbijRemi() {
+  el('modal-remi').classList.remove('aktivan');
+  await dbUpd(`igre/${igra_id}`, {status:'aktivna', remi_ponudac:null});
 }
-window._predaj=predaj;
+window.odbijRemi = odbijRemi;
 
-function prikaziKrajModal(razlog,pob,gub){
-  const ik={mat:'♛',pat:'½',remi:'½',predaja:'⚑'};
-  const na={mat:'Šah-mat!',pat:'Pat!',remi:'Remi!',predaja:'Predaja!'};
-  const po={mat:pob+' pobjeđuje!',pat:'Remi — pat pozicija',remi:'Dogovoreni remi',predaja:pob+' pobjeđuje predajom '+gub};
-  document.getElementById('kraj-ikona').textContent=ik[razlog]||'♟';
-  document.getElementById('kraj-naslov').textContent=na[razlog]||'Kraj igre';
-  document.getElementById('kraj-msg').textContent=po[razlog]||'';
-  document.getElementById('modal-kraj').classList.add('aktivan');
+async function predaj() {
+  if (!igra_id||!igra||!confirm('Sigurno želite predati?')) return;
+  const pobjednik = igra.bijeliIme===ja ? igra.crniIme : igra.bijeliIme;
+  await spremiRezultat(igra.bijeliIme, igra.crniIme, ja===igra.bijeliIme?'c_pobijedio':'b_pobijedio');
+  await dbUpd(`igre/${igra_id}`, {status:'zavrsen', kraj_razlog:'predaja', kraj_pobjednik:pobjednik, kraj_gubitnik:ja});
+  await dbUpd(`online/${igra.bijeliIme}`, {igra_id:null});
+  await dbUpd(`online/${igra.crniIme}`,  {igra_id:null});
 }
+window.predaj = predaj;
 
-async function zatvoriKraj(){
-  document.getElementById('modal-kraj').classList.remove('aktivan');
-  igra=null;igra_id=null;odabrano=null;moguci=[];
-  document.getElementById('prikaz-igre').style.display='none';
-  document.getElementById('prikaz-cekanja').style.display='flex';
-  document.getElementById('izazov-prikaz').innerHTML='';
-  document.getElementById('mob-prikaz-igre').style.display='none';
-  document.getElementById('mob-prikaz-cekanja').style.display='flex';
-  document.getElementById('mob-izazov-prikaz').innerHTML='';
-  if(ja)await dbUpd(`online/${ja}`,{igra_id:null});
-  azurirajStatistike();azurirajPovijest('sve');
-}
-window._zatvoriKraj=zatvoriKraj;
-
-// ── Rezultati ────────────────────────────────────────────────
-async function spremiRezultat(bijeli,crni,ishod){
-  await set(push(ref(db,'rezultati')),{bijeli,crni,ishod,datum:new Date().toLocaleDateString('hr-HR'),ts:Date.now()});
+function prikaziKrajModal(razlog, pob, gub) {
+  const cfg = {
+    mat:     {ik:'♛', na:'Šah-mat!',   po:`${pob} pobjeđuje!`},
+    pat:     {ik:'½', na:'Pat!',        po:'Remi — pat pozicija'},
+    remi:    {ik:'½', na:'Remi!',       po:'Dogovoreni remi'},
+    predaja: {ik:'⚑', na:'Predaja!',    po:`${pob} pobjeđuje predajom ${gub}`}
+  };
+  const c = cfg[razlog] || {ik:'♟', na:'Kraj igre', po:''};
+  el('kraj-ikona').textContent = c.ik;
+  el('kraj-naslov').textContent = c.na;
+  el('kraj-msg').textContent   = c.po;
+  el('modal-kraj').classList.add('aktivan');
 }
 
-async function azurirajStatistike(){
-  const[ig,re]=await Promise.all([dbGet('igraci'),dbGet('rezultati')]);
-  const stat={};
-  Object.keys(ig||{}).forEach(i=>stat[i]={p:0,i:0,r:0});
-  Object.values(re||{}).forEach(m=>{
-    if(!stat[m.bijeli])stat[m.bijeli]={p:0,i:0,r:0};
-    if(!stat[m.crni])stat[m.crni]={p:0,i:0,r:0};
-    if(m.ishod==='b_pobijedio'){stat[m.bijeli].p++;stat[m.crni].i++;}
-    else if(m.ishod==='c_pobijedio'){stat[m.crni].p++;stat[m.bijeli].i++;}
-    else{stat[m.bijeli].r++;stat[m.crni].r++;}
+async function zatvoriKraj() {
+  el('modal-kraj').classList.remove('aktivan');
+  if (listenerIgra) { off(listenerIgra); listenerIgra=null; }
+  igra=null; igra_id=null; odabrano=null; moguci=[];
+  prikaziEkran('glavni');
+  if (ja) await dbUpd(`online/${ja}`, {igra_id:null});
+  azurirajStatistike(); azurirajPovijest('sve');
+}
+window.zatvoriKraj = zatvoriKraj;
+
+// ═══════════════════════════════════════════════
+// REZULTATI I STATISTIKE
+// ═══════════════════════════════════════════════
+async function spremiRezultat(bijeli, crni, ishod) {
+  await set(push(ref(db,'rezultati')), {bijeli, crni, ishod, datum:new Date().toLocaleDateString('hr-HR'), ts:Date.now()});
+}
+
+async function azurirajStatistike() {
+  const [igraciData, rezultatiData] = await Promise.all([dbGet('igraci'), dbGet('rezultati')]);
+  const stat = {};
+  Object.keys(igraciData||{}).forEach(i => stat[i]={p:0,i:0,r:0});
+  Object.values(rezultatiData||{}).forEach(m => {
+    if (!stat[m.bijeli]) stat[m.bijeli]={p:0,i:0,r:0};
+    if (!stat[m.crni])   stat[m.crni]  ={p:0,i:0,r:0};
+    if (m.ishod==='b_pobijedio')      { stat[m.bijeli].p++; stat[m.crni].i++; }
+    else if (m.ishod==='c_pobijedio') { stat[m.crni].p++;   stat[m.bijeli].i++; }
+    else                              { stat[m.bijeli].r++;  stat[m.crni].r++; }
   });
-  const redovi=Object.entries(stat).sort((a,b)=>b[1].p-a[1].p).map(([n,s])=>`<tr><td class="stat-ime">${n}</td><td style="color:#81C784">${s.p}</td><td style="color:#EF9A9A">${s.i}</td><td style="color:var(--text-zlatni)">${s.r}</td></tr>`).join('');
-  const tijelo=document.getElementById('stat-tijelo');if(tijelo)tijelo.innerHTML=redovi;
-  const mobTijelo=document.getElementById('mob-stat-tijelo');if(mobTijelo)mobTijelo.innerHTML=redovi;
-  const filHtml=`<button class="filter-gumb aktivan" onclick="filtrirajPovijest('sve',this)">Sve</button>`+Object.keys(ig||{}).map(n=>`<button class="filter-gumb" onclick="filtrirajPovijest('${n}',this)">${n}</button>`).join('');
-  const fil=document.getElementById('filteri');if(fil)fil.innerHTML=filHtml;
-  const mobFil=document.getElementById('mob-filteri');if(mobFil)mobFil.innerHTML=filHtml.replace(/filtrirajPovijest/g,'filtrirajPovijestMob');
+  const redovi = Object.entries(stat).sort((a,b)=>b[1].p-a[1].p)
+    .map(([n,s])=>`<tr><td class="stat-ime">${n}</td><td style="color:#81C784">${s.p}</td><td style="color:#EF9A9A">${s.i}</td><td style="color:var(--text-zlatni)">${s.r}</td></tr>`).join('');
+  [el('stat-tijelo'), el('mob-stat-tijelo')].forEach(e => { if(e) e.innerHTML=redovi; });
+  const igraci = Object.keys(igraciData||{});
+  const filHtml = `<button class="filter-gumb aktivan" onclick="filtrirajPovijest('sve',this)">Sve</button>`
+    + igraci.map(n=>`<button class="filter-gumb" onclick="filtrirajPovijest('${n}',this)">${n}</button>`).join('');
+  if (el('filteri'))     el('filteri').innerHTML = filHtml;
+  if (el('mob-filteri')) el('mob-filteri').innerHTML = filHtml;
 }
 
-async function azurirajPovijest(filter){
-  const re=await dbGet('rezultati');
-  let lista=Object.values(re||{}).sort((a,b)=>b.ts-a.ts);
-  if(filter!=='sve')lista=lista.filter(r=>r.bijeli===filter||r.crni===filter);
-  const html=lista.length?lista.slice(0,20).map(r=>{
-    const bp=r.ishod==='b_pobijedio',cp=r.ishod==='c_pobijedio',rem=r.ishod==='remi';
-    return`<div class="meč-kartica"><div class="meč-igraci"><span class="meč-igrac">♔ ${r.bijeli}</span><span class="meč-vs">vs</span><span class="meč-igrac">♚ ${r.crni}</span></div><div class="meč-rezultat"><span class="rezultat-bedž ${bp?'pobjeda':cp?'poraz':rem?'remi-bedž':''}">${bp?'✓':cp?'✗':'½'}</span><span style="color:rgba(245,230,200,.3)">—</span><span class="rezultat-bedž ${cp?'pobjeda':bp?'poraz':rem?'remi-bedž':''}">${cp?'✓':bp?'✗':'½'}</span></div><div class="meč-datum">${r.datum}</div></div>`;
-  }).join(''):'<div class="nema-rezultata">Nema odigranih partija</div>';
-  const div=document.getElementById('povijest-lista');if(div)div.innerHTML=html;
-  const mobDiv=document.getElementById('mob-povijest-lista');if(mobDiv)mobDiv.innerHTML=html;
+async function azurirajPovijest(filter) {
+  const rezultatiData = await dbGet('rezultati');
+  let lista = Object.values(rezultatiData||{}).sort((a,b)=>b.ts-a.ts);
+  if (filter!=='sve') lista = lista.filter(r=>r.bijeli===filter||r.crni===filter);
+  const html = lista.length ? lista.slice(0,20).map(r => {
+    const bp=r.ishod==='b_pobijedio', cp=r.ishod==='c_pobijedio', rem=r.ishod==='remi';
+    return `<div class="meč-kartica">
+      <div class="meč-igraci"><span class="meč-igrac">♔ ${r.bijeli}</span><span class="meč-vs">vs</span><span class="meč-igrac">♚ ${r.crni}</span></div>
+      <div class="meč-rezultat">
+        <span class="rezultat-bedž ${bp?'pobjeda':cp?'poraz':rem?'remi-bedž':''}">${bp?'✓':cp?'✗':'½'}</span>
+        <span style="color:rgba(245,230,200,.3)">—</span>
+        <span class="rezultat-bedž ${cp?'pobjeda':bp?'poraz':rem?'remi-bedž':''}">${cp?'✓':bp?'✗':'½'}</span>
+      </div>
+      <div class="meč-datum">${r.datum}</div>
+    </div>`;
+  }).join('') : '<div class="nema-rezultata">Nema odigranih partija</div>';
+  [el('povijest-lista'), el('mob-povijest-lista')].forEach(e => { if(e) e.innerHTML=html; });
 }
-window._filtrirajPovijest=(f,g)=>{document.querySelectorAll('#filteri .filter-gumb').forEach(x=>x.classList.remove('aktivan'));g.classList.add('aktivan');azurirajPovijest(f);};
-window._filtrirajPovijestMob=(f,g)=>{document.querySelectorAll('#mob-filteri .filter-gumb').forEach(x=>x.classList.remove('aktivan'));g.classList.add('aktivan');azurirajPovijest(f);};
 
-// ── Admin ────────────────────────────────────────────────────
-window._otvoriAdmin=()=>{document.getElementById('ekran-prijava').classList.remove('aktivan');document.getElementById('ekran-admin').classList.add('aktivan');document.getElementById('admin-sadrzaj').style.display='none';document.getElementById('admin-loz-forma').style.display='block';document.getElementById('unos-lozinke').value='';};
-window._zatvoriAdmin=()=>{document.getElementById('ekran-admin').classList.remove('aktivan');document.getElementById('ekran-prijava').classList.add('aktivan');};
-window._provjeriLozinku=async()=>{const l=document.getElementById('unos-lozinke').value,t=await dbGet('config/admin_loz');if(l===(t||'admin123')){document.getElementById('admin-loz-forma').style.display='none';document.getElementById('admin-sadrzaj').style.display='block';renderAdminListu();}else document.getElementById('greska-loz').textContent='Pogrešna lozinka.';};
-async function renderAdminListu(){const ig=await dbGet('igraci');const l=document.getElementById('admin-lista');l.innerHTML=ig?Object.keys(ig).map(n=>`<div class="igrac-red-admin"><span>♟ ${n}</span><button class="ukloni-gumb" onclick="ukloniIgraca('${n}')">Ukloni</button></div>`).join(''):'<div class="nema-rezultata">Nema igrača</div>';}
-window._dodajIgraca=async()=>{const n=document.getElementById('novi-igrac').value.trim(),gr=document.getElementById('greska-dodaj');if(!n){gr.textContent='Unesite ime.';return;}const ig=await dbGet('igraci');if(ig&&Object.keys(ig).some(k=>k.toLowerCase()===n.toLowerCase())){gr.textContent='Igrač već postoji.';return;}await dbSet(`igraci/${n}`,true);document.getElementById('novi-igrac').value='';gr.textContent='';renderAdminListu();};
-window._ukloniIgraca=async n=>{if(!confirm(`Ukloniti "${n}"?`))return;await dbDel(`igraci/${n}`);renderAdminListu();};
-window._promijeniLozinku=async()=>{const n=document.getElementById('nova-loz').value;if(!n||n.length<3){alert('Lozinka mora imati barem 3 znaka.');return;}await dbSet('config/admin_loz',n);document.getElementById('nova-loz').value='';alert('Lozinka promijenjena!');};
-window._resetirajRezultate=async()=>{if(!confirm('Obrisati SVE rezultate?'))return;await dbDel('rezultati');alert('Rezultati obrisani.');};
+function filtrirajPovijest(f, g) {
+  document.querySelectorAll('.filter-gumb').forEach(x=>x.classList.remove('aktivan'));
+  g.classList.add('aktivan');
+  azurirajPovijest(f);
+}
+window.filtrirajPovijest = filtrirajPovijest;
 
-document.getElementById('unos-ime').addEventListener('keydown',e=>{if(e.key==='Enter')prijava();});
+// ═══════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════
+function otvoriAdmin() {
+  prikaziEkran('admin');
+  el('admin-sadrzaj').style.display='none';
+  el('admin-loz-forma').style.display='block';
+  el('unos-lozinke').value='';
+  el('greska-loz').textContent='';
+}
+window.otvoriAdmin = otvoriAdmin;
 
-// ── Mob Tab navigacija ───────────────────────────────────────
-window._mobTab=(id,gumb)=>{
+function zatvoriAdmin() { prikaziEkran('prijava'); }
+window.zatvoriAdmin = zatvoriAdmin;
+
+async function provjeriLozinku() {
+  const l = el('unos-lozinke').value;
+  const t = await dbGet('config/admin_loz');
+  if (l===(t||'admin123')) {
+    el('admin-loz-forma').style.display='none';
+    el('admin-sadrzaj').style.display='block';
+    renderAdminListu();
+  } else {
+    el('greska-loz').textContent='Pogrešna lozinka.';
+  }
+}
+window.provjeriLozinku = provjeriLozinku;
+
+async function renderAdminListu() {
+  const igraci = await dbGet('igraci');
+  el('admin-lista').innerHTML = igraci
+    ? Object.keys(igraci).map(n=>`<div class="igrac-red-admin"><span>♟ ${n}</span><button class="ukloni-gumb" onclick="ukloniIgraca('${n}')">Ukloni</button></div>`).join('')
+    : '<div class="nema-rezultata">Nema igrača</div>';
+}
+
+async function dodajIgraca() {
+  const n = el('novi-igrac').value.trim();
+  const gr = el('greska-dodaj');
+  if (!n) { gr.textContent='Unesite ime.'; return; }
+  const igraci = await dbGet('igraci');
+  if (igraci&&Object.keys(igraci).some(k=>k.toLowerCase()===n.toLowerCase())) { gr.textContent='Igrač već postoji.'; return; }
+  await dbSet(`igraci/${n}`, true);
+  el('novi-igrac').value=''; gr.textContent='';
+  renderAdminListu();
+}
+window.dodajIgraca = dodajIgraca;
+
+async function ukloniIgraca(n) {
+  if (!confirm(`Ukloniti "${n}"?`)) return;
+  await dbDel(`igraci/${n}`);
+  renderAdminListu();
+}
+window.ukloniIgraca = ukloniIgraca;
+
+async function promijeniLozinku() {
+  const n = el('nova-loz').value;
+  if (!n||n.length<3) { alert('Lozinka mora imati barem 3 znaka.'); return; }
+  await dbSet('config/admin_loz', n);
+  el('nova-loz').value='';
+  alert('Lozinka promijenjena!');
+}
+window.promijeniLozinku = promijeniLozinku;
+
+async function resetirajRezultate() {
+  if (!confirm('Obrisati SVE rezultate?')) return;
+  await dbDel('rezultati');
+  alert('Rezultati obrisani.');
+}
+window.resetirajRezultate = resetirajRezultate;
+
+// ═══════════════════════════════════════════════
+// MOBILNA NAVIGACIJA
+// ═══════════════════════════════════════════════
+function mobTab(id, gumb) {
   document.querySelectorAll('.mob-panel').forEach(p=>p.classList.remove('aktivan'));
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('aktivan'));
-  const panel=document.getElementById('mob-'+id);
-  if(panel)panel.classList.add('aktivan');
-  gumb.classList.add('aktivan');
-};
+  const panel = el('mob-'+id);
+  if (panel) panel.classList.add('aktivan');
+  if (gumb)  gumb.classList.add('aktivan');
+}
+window.mobTab = mobTab;
 
-// Resize - re-render ploče na promjenu veličine prozora
-window.addEventListener('resize',()=>{ if(igra)renderPloca(); });
+// ═══════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════
+function el(id) { return document.getElementById(id); }
 
-// posaljiIzazov - obavijesti mob o čekanju
-const _origPosalji=window.posaljiIzazov;
-window._posaljiIzazov=async(prot)=>{
-  document.getElementById('mob-podtekst-dobrodosli').textContent=`Izazov poslan ${prot}u...`;
-  document.getElementById('mob-izazov-prikaz').innerHTML=`<p style="color:var(--text-zlatni);font-style:italic;margin-top:12px" class="puls">⏳ Čekanje na odgovor...</p>`;
-  await _origPosalji(prot);
-};
-</script>
-<script>
-// Proxy functions - because ES module functions need explicit window export
-// These ensure onclick= attributes work before module fully loads
-function prijava(){window._prijava&&window._prijava();}
-function odjava(){window._odjava&&window._odjava();}
-function otvoriAdmin(){window._otvoriAdmin&&window._otvoriAdmin();}
-function zatvoriAdmin(){window._zatvoriAdmin&&window._zatvoriAdmin();}
-function provjeriLozinku(){window._provjeriLozinku&&window._provjeriLozinku();}
-function dodajIgraca(){window._dodajIgraca&&window._dodajIgraca();}
-function promijeniLozinku(){window._promijeniLozinku&&window._promijeniLozinku();}
-function resetirajRezultate(){window._resetirajRezultate&&window._resetirajRezultate();}
-function ponudiRemi(){window._ponudiRemi&&window._ponudiRemi();}
-function prihvatiRemi(){window._prihvatiRemi&&window._prihvatiRemi();}
-function odbijRemi(){window._odbijRemi&&window._odbijRemi();}
-function predaj(){window._predaj&&window._predaj();}
-function zatvoriKraj(){window._zatvoriKraj&&window._zatvoriKraj();}
-function posaljiIzazov(n){window._posaljiIzazov&&window._posaljiIzazov(n);}
-function prihvatiIzazov(n){window._prihvatiIzazov&&window._prihvatiIzazov(n);}
-function odbijIzazov(n){window._odbijIzazov&&window._odbijIzazov(n);}
-function promoviraj(t,b,r,k){window._promoviraj&&window._promoviraj(t,b,r,k);}
-function ukloniIgraca(n){window._ukloniIgraca&&window._ukloniIgraca(n);}
-function mobTab(id,g){window._mobTab&&window._mobTab(id,g);}
-function filtrirajPovijest(f,g){window._filtrirajPovijest&&window._filtrirajPovijest(f,g);}
-function filtrirajPovijestMob(f,g){window._filtrirajPovijestMob&&window._filtrirajPovijestMob(f,g);}
+// Keyboard
+el('unos-ime').addEventListener('keydown', e => { if(e.key==='Enter') prijava(); });
+el('unos-lozinke').addEventListener('keydown', e => { if(e.key==='Enter') provjeriLozinku(); });
+el('novi-igrac').addEventListener('keydown', e => { if(e.key==='Enter') dodajIgraca(); });
+
+// Resize
+window.addEventListener('resize', () => { if(igra) renderPloca(); });
 </script>
 </body>
 </html>
