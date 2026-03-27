@@ -632,7 +632,7 @@ async function init() {
   const config = await dbGet('config');
   if (!config) await dbSet('config', {admin_loz:'admin123'});
   const igraci = await dbGet('igraci');
-  if (!igraci) await dbSet('igraci', {Francesco:true,Marko:true,Andro:true,Stanko:true,Marin:true});
+  if (!igraci) await dbSet('igraci', {Francesco:true,Marta:true,Ivan:true,Ana:true,Luka:true});
 }
 init();
 
