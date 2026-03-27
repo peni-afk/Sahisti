@@ -494,7 +494,10 @@
     <div style="font-size:3rem;margin-bottom:12px" id="kraj-ikona">♛</div>
     <div class="modal-naslov" id="kraj-naslov">Kraj igre</div>
     <p style="color:rgba(245,230,200,.6);font-style:italic;margin-bottom:24px" id="kraj-msg"></p>
-    <button class="gumb gumb-primarni" onclick="zatvoriKraj()">Nova igra</button>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="gumb gumb-primarni" style="width:auto;padding:12px 24px;margin:0" onclick="zatvoriKraj()">♟ Nova igra</button>
+      <button class="gumb gumb-sekundarni" style="width:auto;padding:12px 24px;margin:0" onclick="zatvoriKrajIOdjavi()">← Odjava</button>
+    </div>
   </div>
 </div>
 
@@ -1176,6 +1179,14 @@ async function zatvoriKraj() {
   azurirajStatistike(); azurirajPovijest('sve');
 }
 window.zatvoriKraj = zatvoriKraj;
+
+async function zatvoriKrajIOdjavi() {
+  el('modal-kraj').classList.remove('aktivan');
+  if (listenerIgra) { off(listenerIgra); listenerIgra=null; }
+  igra=null; igra_id=null; odabrano=null; moguci=[];
+  await odjava();
+}
+window.zatvoriKrajIOdjavi = zatvoriKrajIOdjavi;
 
 // ═══════════════════════════════════════════════
 // REZULTATI I STATISTIKE
