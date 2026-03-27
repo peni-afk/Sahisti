@@ -103,6 +103,10 @@
   .polje.sah { background:rgba(220,50,50,.5) !important; }
   .polje:hover:not(.odabrano) { filter:brightness(1.1); }
   .figura-anim { display:inline-block; }
+  /* Bijele figure - tamna boja s bijelim outlineom za vidljivost */
+  .polje .figura-boja-b { color: #f8f0d8; text-shadow: 0 0 2px #000, 0 0 3px #000, 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; }
+  /* Crne figure - tamna boja */
+  .polje .figura-boja-c { color: #1a1008; text-shadow: 0 0 2px rgba(255,255,255,0.3); }
   .status-traka { width:100%; max-width:520px; margin-top:12px; display:flex; gap:8px; }
   .status-poruka { flex:1; background:rgba(0,0,0,.4); border:1px solid rgba(212,160,23,.2); border-radius:3px; padding:8px 14px; font-size:.9rem; font-style:italic; color:rgba(245,230,200,.7); min-height:36px; }
   .gumb-malen { padding:8px 14px; font-family:'Playfair Display',serif; font-size:.85rem; border:1px solid rgba(212,160,23,.4); border-radius:3px; background:rgba(0,0,0,.3); color:var(--text-bijeli); cursor:pointer; transition:all .2s; white-space:nowrap; }
@@ -164,6 +168,8 @@
   .puls { animation:puls 1.5s infinite; }
 
   /* ── MOBILNA NAVIGACIJA (tab traka) ── */
+  /* Na desktopu su mobilni paneli i navigacija skriveni */
+  .mob-panel { display:none !important; }
   .mob-nav {
     display:none;
     position:fixed; bottom:0; left:0; right:0;
@@ -187,14 +193,12 @@
 
   /* ── MOBILNI PANELI ── */
   .mob-panel {
-    display:none;
     flex-direction:column;
     flex:1;
     overflow-y:auto;
     padding:16px;
     gap:14px;
   }
-  .mob-panel.aktivan { display:flex; }
 
   /* ── RESPONSIVNOST ── */
   @media(max-width:900px) {
@@ -202,6 +206,8 @@
     .glavni-sadrzaj { grid-template-columns:1fr; max-height:none; }
     .panel-lijevi,.panel-desni { display:none; }
     .mob-nav { display:block; }
+    .mob-panel { display:none !important; }
+    .mob-panel.aktivan { display:flex !important; }
 
     /* Header kompaktniji */
     header { padding:10px 14px; }
@@ -959,7 +965,7 @@ function renderPlocaEl(ploEl, kdEl, klEl, vel) {
     }
     if (igra.ploca[r][k]?.tip==='K' && jeUSahu(igra,igra.ploca[r][k].boja)) div.classList.add('sah');
     const fig = igra.ploca[r][k];
-    if (fig) { const s=document.createElement('span'); s.textContent=FIG[fig.tip][fig.boja]; div.appendChild(s); }
+    if (fig) { const s=document.createElement('span'); s.className=`figura-boja-${fig.boja}`; s.textContent=FIG[fig.tip][fig.boja]; div.appendChild(s); }
     div.addEventListener('click', ()=>klikPolje(r,k));
     ploEl.appendChild(div);
   }));
